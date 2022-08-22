@@ -1,0 +1,14 @@
+
+<!-- Post a tweet -->
+<div class="post-tweet-container">
+    <div class="profile-pic-container">
+        <img src="<%= locals.userLoggedIn.profilePic %>" alt="User's profile pic" class="profile-pic">
+    </div>
+    <div class="post-tweet">
+        <textarea id="postTextarea" name="tweet" cols="30" rows="10" placeholder="What's happening?"></textarea>
+        <button id="submitPostButton" type="submit" class="btn" disabled>Post</button>
+    </div>
+</div>
+
+<!-- Posts Display -->
+<%- include('layouts/posts-layout') %>

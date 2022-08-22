@@ -1,0 +1,46 @@
+<!-- Register -->
+
+
+
+<!-- Variables needed to render the page -->
+
+
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#000000">
+    <link rel="stylesheet" href="css/login-register.css">
+    <script src="https://kit.fontawesome.com/7caf9c456e.js" crossorigin="anonymous"></script>
+    <title>Twitter | Register</title>
+</head>
+
+<body>
+    <div class="login-container">
+        <i class="fab fa-twitter"></i>
+        <h1 class="form-title">Sign Up to Twitter</h1>
+        <form action="/register" method="post">
+            <p class="error">
+                <%= locals.errorMessage %>
+            </p>
+            <input type="text" name="firstName" placeholder="First Name" autocomplete="off"
+                value="<%= locals.firstName %>" required>
+            <input type="text" name="lastName" placeholder="Last Name" autocomplete="off" value="<%= locals.lastName %>"
+                required>
+            <input type="text" name="username" placeholder="Username" autocomplete="off" value="<%= locals.username %>"
+                required>
+            <input type="email" name="email" placeholder="Email" autocomplete="off" value="<%= locals.email %>"
+                required>
+            <input type="password" name="password" placeholder="Password" autocomplete="off"
+                value="<%= locals.password %>" required>
+            <button class="btn" type="submit">Sign Up</button>
+        </form>
+        <a class="link" href="/login">Already have an account? Login Here</a>
+    </div>
+</body>
+
+</html>

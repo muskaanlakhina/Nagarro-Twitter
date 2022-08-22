@@ -1,0 +1,21 @@
+<%- include('layouts/posts-layout') %> 
+<%- include('layouts/users-layout') %> 
+
+<div class="search-bar-container">
+    <i class="fas fa-search"></i>
+    <input type="text" name="searchBox" id="searchBox", data-search="<%= locals.selectedTab? locals.selectedTab : 'posts' %>", placeholder="Search for User or Post">
+</div>
+
+<div class="tabs-container">
+    <% if(!locals.selectedTab) { %>
+    <a id="tabPosts" href="/search" class="active-tab">Posts</a>
+    <a id="tabUsers" href="/search/users">Users</a>
+    <% } else { %>
+        <a id="tabPosts" href="/search">Posts</a>
+        <a id="tabUsers" href="/search/users" class="active-tab">Users</a>
+    <% } %> 
+</div>
+
+<div class="result-container">
+
+</div>

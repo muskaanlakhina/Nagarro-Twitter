@@ -1,0 +1,10 @@
+<script>
+    const chat = '<%- JSON.stringify(locals.chat) %>'
+</script>
+<% locals.mainContent = include('chatPage-content') %> 
+
+<!-- JavaScript File for Posts -->
+<% locals.jsfiles = ['/javascript/chatPage.js'] %> 
+
+<!-- Main Layout -->
+<%- include('layouts/main-layout') %>

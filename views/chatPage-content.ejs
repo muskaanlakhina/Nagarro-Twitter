@@ -1,0 +1,37 @@
+<% if(locals.errorMessage) { %>
+    <span class="errorMessage"><%= locals.errorMessage %></span>
+<% } else { %>
+
+    <!-- Chat Name Change Modal -->
+    <div class="backdrop"></div>
+    
+    <div id="chatNameModal" class="modal">
+        <h2 class="modal-title">Change the chat name</h2>
+        <i id="chatNameCloseModal" class="close-modal fas fa-times"></i>
+        <div class="modal-body">
+            <input type="text" name="chatNameTextbox" id="chatNameTextbox" value="<%= locals.chat.chatName %>" placeholder="Enter the name of the chat">
+        </div>
+        <div class="modal-footer">
+            <button id="chatNameSubmitButton" class="btn">Save</button>
+        </div>
+    </div>
+    
+    <div class="chat-page-container">
+        <div class="chat-titlebar-container">
+            <h2 id="chatName" class="ellipsis"></h2>
+        </div>
+        <div class="main-chat-container">
+            <ul class="chat-container" data-room="<%= locals.chat._id %>">
+                <div class="typing-dots">
+                    <img src="/images/dots.gif" alt="typing">
+                </div>
+            </ul>
+        </div>
+        <div class="chat-footer">
+            <textarea name="messageInput" class="messageInput" placeholder="Type a message..." cols="30" rows="10"></textarea>
+            <button class="send-message-button">
+                <i class="fas fa-paper-plane"></i>
+            </button>
+        </div>
+    </div>
+<% } %> 

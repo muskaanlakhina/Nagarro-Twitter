@@ -1,0 +1,13 @@
+<script>
+    const selectedTab = '<%- locals.selectedTab %>'
+    const profileUser = '<%- locals.profileUser._id %>'
+</script>
+
+<!-- JavaScript File for Posts -->
+<% locals.jsfiles = ['/javascript/followersPage.js', '/javascript/users-layout.js', '/javascript/followFollowing-layouts.js'] %> 
+
+<!-- Main Content -->
+<% locals.mainContent = include('followers-content') %>
+
+<!-- Main Layout -->
+<%- include('layouts/main-layout') %>

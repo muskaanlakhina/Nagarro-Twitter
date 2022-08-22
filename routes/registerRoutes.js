@@ -1,78 +1,62 @@
 const express = require('express');
-const app = express();
+const User = require('../schema/userSchema');
+const bcrypt = require('bcrypt');
+
+
+// ********** Using Modules **********
 const router = express.Router();
-const bodyParser =  require("body-parser");
-const bcrypt = require("bcrypt");
-const User = require('../schemas/userSchema');
-
-app.set("view engine","pug");
-app.set("views","views");
-
-app.use(bodyParser.urlencoded({ extended:false }));
-
-router.get('/',(req,res,next) => {
-    res.status(200).render("register");
-})
-
-router.post('/',async (req,res,next) => {
-   //console.log(req.body);
-    var firstname =req.body.firstname.trim();
-    var lastname =req.body.lastname.trim();
-    var username =req.body.username.trim();
-    var email =req.body.email.trim();
-    var password = req.body.password;
-    //console.log(password);
 
 
-    var payload = req.body;
-    if(firstname && lastname && username && email && password){
-        var user= await User.findOne({
+// ********** Get Request: /register/ **********
+router.get('/', function(req, res) {
+    res.render('register');
+});
+
+
+// ********** Post Request: /register/ **********
+router.post('/', async function(req, res) {
+    const firstName = req.body.firstName?.trim();
+    const lastName = req.body.lastName?.trim();
+    const username = req.body.username?.trim();
+    const email = req.body.email?.trim();
+    const password = req.body.password;
+    const payload = req.body;
+
+    if(firstName && lastName && username && email && password) {
+        const user = await User.findOne({
             $or: [
                 {username: username},
-                {email: email},
-
+                {email: email}
             ]
-        })
-        .catch((error)=>{
-            console.log(error);
-            errorMessage("something went wrong");
-            res.status(200).render("register",payload);
+        }).catch(function(err) {
+            console.log(err);
+            payload.errorMessage = 'Something went wrong. Try again later.';
+            res.render('register', payload);
         });
-
-        if(user == null){
-            //no user 
-            var data = req.body;
-
-            data.password =await bcrypt.hash(password,10); 
-
-            //console.log("password: " + req.body.password);
-
-            User.create(data)
-            .then((user) =>{
-                req.session.user = user;
-                res.redirect("/");
-                //console.log(user);
-                //console.log("passwordUser: " + user.password);
-            })
+        if(!user) {
+            const newUser = new User(req.body);
+            newUser.password = await bcrypt.hash(password, 10);
+            newUser.save(function(err) {
+                if(err) {
+                    console.log('Database user insertion failed.');
+                    res.render('register');
+                }
+                else{
+                    res.render('login', {successMessage: 'Registered Succesfully'});
+                }
+            });
         }
-        else
-        {
-            //user found
-            if(email == user.email){
-                payload.errorMessage=" Email already in use ! ";
-            }
-            else
-            {
-                payload.errorMessage=" Username already in use ! ";
-            }
-            res.status(200).render("register",payload);
+        else {
+            if(email == user.email) payload.errorMessage = 'Email already in use';
+            else payload.errorMessage = 'Username already exists, try a different username';
+            res.render('register', payload);
         }
     }
-    else{
-        payload.errorMessage=" Make sure each field has a valid value. ";
-        res.status(200).render("register",payload);
+    else {
+        payload.errorMessage = 'Make sure each field has a valid value.';
+        res.render('register', payload);
     }
+});
 
-})
 
-module.exports = router ;
+module.exports = router;

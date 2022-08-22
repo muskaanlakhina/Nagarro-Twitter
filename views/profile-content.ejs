@@ -1,0 +1,80 @@
+<!-- Change profile pic modal -->
+<div id="profilePicModal" class="modal">
+    <h2 class="modal-title">Upload a new profile picture</h2>
+    <i id="profilePicCloseModal" class="close-modal fas fa-times"></i>
+    <div class="modal-body">
+        <input type="file" name="profilePhoto" id="profilePhoto">
+        <div class="img-preview-container">
+            <img class="preview" id="profilePhotoPreview">
+        </div>
+    </div>
+    <div class="modal-footer">
+        <button id="profilePicUploadButton" class="btn">Save</button>
+    </div>
+</div>
+
+
+<!-- Cover Photo Modal -->
+<div id="coverPhotoModal" class="modal">
+    <h2 class="modal-title">Upload a new cover photo</h2>
+    <i id="coverPhotoCloseModal" class="close-modal fas fa-times"></i>
+    <div class="modal-body">
+        <input type="file" name="coverPhoto" id="coverPhoto">
+        <div class="img-preview-container">
+            <img class="preview" id="coverPhotoPreview">
+        </div>
+    </div>
+    <div class="modal-footer">
+        <button id="coverPhotoUploadButton" class="btn">Save</button>
+    </div>
+</div>
+
+
+<div class="cover-photo">
+    <% if(locals.profileUser._id == locals.userLoggedIn._id) { %> 
+        <button class="change-cover-pic"><i class="fas fa-camera"></i></button>
+    <% } %>
+    <% if(locals.profileUser.coverPhoto) { %> 
+        <img class="cover-photo-img" src="<%= locals.profileUser.coverPhoto %>" alt="User's Cover Photo">
+    <% } %>
+    <div class="profile-page-pic-container">
+        <% if(locals.profileUser._id == locals.userLoggedIn._id) { %> 
+            <button class="change-profile-pic"><i class="fas fa-camera"></i></button>
+        <% } %> 
+        <img src="<%= locals.profileUser.profilePic %>" alt="User's Profile Picture">
+    </div>
+</div>
+<div class="profile-header">
+    <div class="profile-information">
+        <h3 class="profile-user-name"><%= locals.profileUser.firstName %> <%= locals.profileUser.lastName %></h3>
+        <h3 class="profile-username">@<%= locals.profileUser.username %></h3>
+        <div class="follow-information">
+            <a class="following" href="/profile/<%= locals.profileUser.username %>/following">
+                <span id="followingNum" class="num"><%= locals.profileUser.following.length %></span> Following
+            </a>
+            <a class="followers" href="/profile/<%= locals.profileUser.username %>/followers">
+                <span id="followersNum" class="num"><%= locals.profileUser.followers.length %></span> Followers
+            </a>
+        </div>
+    </div>
+    <% if(locals.userLoggedIn._id != locals.profileUser._id) {%>
+        <div class="profile-buttons">
+            <a href= <%= `/messages/${locals.profileUser._id}` %> class="message"><i class="far fa-envelope"></i></a>
+            <% if(locals.isFollowing) { %>
+                <a class='follow-btn is-following' data-id="<%= locals.profileUser._id %>" href="">Following</a>
+            <% } else { %>
+                <a class='follow-btn to-follow' data-id="<%= locals.profileUser._id %>" href="">Follow</a>
+            <% } %>
+        </div>
+    <% } %>
+</div>
+<div class="pinned-post-container">
+    
+</div>
+<div class="tabs-container">
+    <a id="tabPosts" class="active-tab">Posts</a>
+    <a id="tabReplies">Replies</a>
+</div>
+
+
+<%- include('layouts/posts-layout') %>

@@ -1,0 +1,12 @@
+<!-- Post id for the post to be displayed -->
+<script>
+    const postId = '<%- locals.postId %>'
+</script>
+
+<% locals.mainContent = include('layouts/posts-layout') %> 
+
+<!-- JavaScript File for Posts -->
+<% locals.jsfiles = ['/javascript/posts-layout.js', '/javascript/postPage.js'] %> 
+
+<!-- Main Layout -->
+<%- include('layouts/main-layout') %>

@@ -1,0 +1,70 @@
+<div class="backdrop"></div>
+
+<!-- Reply to a post Modal -->
+<div id="replyModal" class="modal">
+    <h2 class="modal-title">Reply</h2>
+    <i id="replyCloseModal" class="close-modal fas fa-times"></i>
+    <div class="modal-body">
+        <div id="replySelectedPost" class="selected-post">
+
+        </div>
+        <div class="post-tweet-container">
+            <div class="profile-pic-container">
+                <img src="<%= locals.userLoggedIn.profilePic %>" alt="User's profile pic" class="profile-pic">
+            </div>
+            <div class="post-tweet">
+                <textarea id="replyTextarea" name="tweet" cols="30" rows="10" placeholder="Reply"></textarea>
+            </div>
+        </div>
+    </div>
+    <div class="modal-footer">
+        <button id="replySubmitButton" class="btn" disabled>Reply</button>
+    </div>
+</div>
+
+<!-- Delete a post Modal -->
+<div id="deleteModal" class="modal">
+    <h2 class="modal-title">Do you wish to delete the post?</h2>
+    <i id="deleteCloseModal" class="close-modal fas fa-times"></i>
+    <div class="modal-body">
+        <div id="deleteSelectedPost" class="selected-post">
+
+        </div>
+    </div>
+    <div class="modal-footer">
+        <button id="deleteSubmitButton" class="btn">Delete</button>
+    </div>
+</div>
+
+<!-- Pin a post Modal -->
+<div id="pinModal" class="modal">
+    <h2 class="modal-title">Do you wish to pin the post? You can pin only one post.</h2>
+    <i id="pinCloseModal" class="close-modal fas fa-times"></i>
+    <div class="modal-body">
+        <div id="pinSelectedPost" class="selected-post">
+
+        </div>
+    </div>
+    <div class="modal-footer">
+        <button id="pinSubmitButton" class="btn">Pin</button>
+    </div>
+</div>
+
+<!-- Unpin a post Modal -->
+<div id="unpinModal" class="modal">
+    <h2 class="modal-title">Do you wish to unpin the post?</h2>
+    <i id="unpinCloseModal" class="close-modal fas fa-times"></i>
+    <div class="modal-body">
+        <div id="unpinSelectedPost" class="selected-post">
+
+        </div>
+    </div>
+    <div class="modal-footer">
+        <button id="unpinSubmitButton" class="btn">Unpin</button>
+    </div>
+</div>
+
+<!-- Posts -->
+<div class="post-container">
+    
+</div>

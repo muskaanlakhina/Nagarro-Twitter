@@ -1,0 +1,17 @@
+<!-- Profile Page -->
+
+<script>
+    const profileUserId = '<%- locals.profileUser._id %>'
+</script>
+
+<!-- JavaScript Files -->
+<% locals.jsfiles = ['/javascript/profilePage.js', '/javascript/posts-layout.js', '/javascript/followFollowing-layouts.js'] %> 
+
+<!-- Check if the loggedInUser is following the profileUser -->
+<% if(locals.userLoggedIn.following.includes(String(locals.profileUser._id))) { locals.isFollowing = true } else { locals.isFollowing = false } %>
+
+<!-- Main Content -->
+<% locals.mainContent = include('profile-content', {isFollowing: locals.isFollowing}) %> 
+
+<!-- Main Layout -->
+<%- include('layouts/main-layout') %>

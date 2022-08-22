@@ -1,0 +1,43 @@
+<!-- Login -->
+
+
+
+<!-- Variables needed to render the page -->
+
+
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#000000">
+    <link rel="stylesheet" href="css/login-register.css">
+    <script src="https://kit.fontawesome.com/7caf9c456e.js" crossorigin="anonymous"></script>
+    <title>Twitter | Login</title>
+</head>
+
+<body>
+    <div class="login-container">
+        <i class="fab fa-twitter"></i>
+        <h1 class="form-title">Log in to Twitter</h1>
+        <form action="/login" method="post">
+            <p class="error">
+                <%= locals.errorMessage %>
+            </p>
+            <p class="success">
+                <%= locals.successMessage %>
+            </p>
+            <input type="text" name="loginUsername" placeholder="Email or username" autocomplete="off"
+                required>
+            <input type="password" name="loginPassword" placeholder="Password" autocomplete="off" 
+                required>
+            <button class="btn" type="submit">Log in</button>
+        </form>
+        <a class="link" href="/register">Sign up for Twitter</a>
+    </div>
+</body>
+
+</html>

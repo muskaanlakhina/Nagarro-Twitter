@@ -1,56 +1,46 @@
+// ********** Importing Modules **********
 const express = require('express');
-const app = express();
-const router =express.Router();
-const bodyParser =  require("body-parser");
-const bcrypt = require("bcrypt");
-const User = require('../schemas/userSchema');
+const User = require('../schema/userSchema');
+const bcrypt = require('bcrypt');
 
-app.set("view engine","pug");
-app.set("views","views");
 
-app.use(bodyParser.urlencoded({ extended:false }));
+// ********** Using Modules **********
+const router = express.Router();
 
-router.get('/',(req,res,next) => {
-    res.status(200).render("login");
-})
+// ********** Get Request: /login/ **********
+router.get('/', function(req, res) {
+    res.render('login');
+});
 
-router.post('/',async (req,res,next) => {
-
-    var payload = req.body;
-
-   if(req.body.logUsername && req.body.logPassword ){
-
-    console.log("1"+ req.body.logUsername + req.body.logUsername);
-
-    var user= await User.findOne({
-        $or: [
-            {username: req.body.logUsername},
-            {email: req.body.logUsername}
-        ]
-    })
-    .catch((error)=>{
-        console.log(error);
-        errorMessage="something went wrong";
-        res.status(200).render("login",payload);
-    });
-
-        if(user != null){
-            console.log(user)
-            var  result = await bcrypt.compare(req.body.logPassword,user.password);
-
-            if(result === true){
-                req.session.user =user;
-                return res.redirect("/");
+// ********** Post Request: /login/ **********
+router.post('/', async function(req, res) {
+    const payload = req.body;
+    if(req.body.loginUsername.trim() && req.body.loginPassword) {
+        const foundUser = await User.findOne({
+            $or: [
+                {username: req.body.loginUsername},
+                {email: req.body.loginUsername}
+            ]
+        }).catch(function(err) {
+            console.log(err);
+            payload.errorMessage = 'Something went wrong. Try again later.';
+            res.render('login', payload);
+        });
+        if(foundUser) {
+            const result = await bcrypt.compare(req.body.loginPassword, foundUser.password); 
+            if(result) { 
+                req.session.user = foundUser;
+                return res.redirect('/');
             }
         }
+        payload.errorMessage = 'Incorrect Login Credentials';
+        res.render('login', payload);
+    }
+    else {
+        payload.errorMessage = 'Make sure each field has a valid value';
+        res.render('login', payload);
+    }
+});
 
-    errorMessage="Login Credentials incorrect !";
-    return res.status(200).render("login",payload);
-   }
 
-
-    errorMessage="Make sure each field has a valid value !";
-    res.status(200).render("login");
-})
-
-module.exports = router ;
+module.exports = router;

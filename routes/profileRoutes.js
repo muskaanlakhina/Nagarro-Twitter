@@ -1,95 +1,59 @@
-// ********** Importing Modules **********
-const express = require('express');
-const User = require('../schema/userSchema');
+const express = require("express");
+const app = express()
+const router = express.Router()
+const bodyParser = require("body-parser")
+const bcrypt = require("bcryptjs")
+const User = require("../schemas/UserSchema")
 
+router.get("/", (req, res, next) => {
 
-// ********** Using Modules **********
-const router = express.Router();
-
-
-// ********** Get Request: /profile/ **********
-router.get('/', function(req, res) {
-    const payload = {
-        pageTitle: `${req.session.user.firstName} ${req.session.user.lastName}`,
+    var payload = {
+        pageTitle: req.session.user.username + "'s profile",
         userLoggedIn: req.session.user,
-        profileUser: req.session.user,
-        profile: 'active'
+        userLoggedInJs: JSON.stringify(req.session.user),
+        profileUser: req.session.user
     }
-    res.render('profilePage', payload);
-});
 
-
-// ********** Get Request: /profile/_usernameOrId_ **********
-router.get('/:username', async function(req, res) {
-    const profileUser = await User.findOne({username: req.params.username})
-    .catch(function(err) {
-        console.log(err);
-        res.sendStatus(400);
-    })
-    let payload = {};
-    if(!profileUser) {
-        const profileUserById = await User.findById(req.params.username)
-        .catch(function(err) {
-            console.log(err);
-        })
-        if(!profileUserById){
-            payload = {
-                pageTitle: 'User not found',
-                userLoggedIn: req.session.user,
-                profile: 'active'
-            }
-        }
-        else {
-            payload = {
-                pageTitle: `${profileUserById.firstName} ${profileUserById.lastName}`,
-                userLoggedIn: req.session.user,
-                profileUser: profileUserById,
-                profile: 'active'
-            }
-        }
-    }
-    else {
-        payload = {
-            pageTitle: `${profileUser.firstName} ${profileUser.lastName}`,
-            userLoggedIn: req.session.user,
-            profileUser: profileUser,
-            profile: 'active'
-        }
-    }
-    res.render('profilePage', payload);
+    res.status(200).render("profilePage", payload)
 })
 
+router.get("/:username", async (req, res, next) => {
 
-// ********** Get Request: /profile/_username_/followers **********
-router.get('/:username/followers', async function(req, res) {
-    const profileUser =  await User.findOne({username: req.params.username}).catch(function() {
-        res.sendStatus(400);
-    }),
-    payload = {
-        pageTitle: `${profileUser.firstName} ${profileUser.lastName}`,
-        profileUser: profileUser,
-        userLoggedIn: req.session.user,
-        selectedTab: 'followers',
-        profile: 'active'
-    }
-    res.render('followersPage', payload);
-});
+    var payload = await getPayload(req.params.username, req.session.user)
 
-
-// ********** Get Request: /profile/_username_/following **********
-router.get('/:username/following', async function(req, res) {
-    const profileUser =  await User.findOne({username: req.params.username}).catch(function() {
-        res.sendStatus(400);
-    }),
-    payload = {
-        pageTitle: `${profileUser.firstName} ${profileUser.lastName}`,
-        profileUser: profileUser,
-        userLoggedIn: req.session.user,
-        selectedTab: 'following',
-        profile: 'active'
-    }
-    res.render('followersPage', payload);
+    res.status(200).render("profilePage", payload)
 })
 
+router.get("/:username/replies", async (req, res, next) => {
 
-module.exports = router;
+    var payload = await getPayload(req.params.username, req.session.user)
+    payload.selectedTab = "replies"
+    res.status(200).render("profilePage", payload)
+})
+
+async function getPayload(username, userLoggedIn) {
+    // Search for user using username.
+    var user = await User.findOne({ username: username })
+
+    if(user == null){
+
+        // Search for user using ID.
+        user = await User.findById(username)
+
+        if(user == null){
+            return {
+                pageTitle: "User not found",
+                userLoggedIn: userLoggedIn,
+                userLoggedInJs: JSON.stringify(userLoggedIn)
+            }
+        }
+    }
+    return {
+        pageTitle: user.username,
+        userLoggedIn: userLoggedIn,
+        userLoggedInJs: JSON.stringify(userLoggedIn),
+        profileUser: user
+    }
+}
+
+module.exports = router

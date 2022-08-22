@@ -1,16 +1,22 @@
-// ********** Importing Modules **********
-const express = require('express');
+// Declaring what dependency I want.
+const express = require("express");
+const app = express()
+const router = express.Router()
+const bodyParser = require("body-parser")
+const bcrypt = require("bcryptjs")
+const User = require("../schemas/UserSchema")
 
+app.use(bodyParser.urlencoded({ extended: false}))
 
-// ********** Using Modules **********
-const router = express.Router();
+// Handling the routes, not the server = app.
+router.get("/", (req, res, next) => {
 
+    if(req.session){
+        req.session.destroy(() => {
+            res.redirect("/login")
+        })
+    }
+})
 
-// ********** Get Request: /logout/ **********
-router.get('/', function(req, res) {
-    req.session.destroy(function() {
-        res.redirect('/');
-    });
-});
-
-module.exports = router;
+// Export it so we can use this file in other places.
+module.exports = router

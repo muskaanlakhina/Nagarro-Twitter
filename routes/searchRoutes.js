@@ -1,32 +1,28 @@
-// ********** Importing Modules **********
-const express = require('express');;
+const express = require("express");
+const app = express()
+const router = express.Router()
+const bodyParser = require("body-parser")
+const bcrypt = require("bcryptjs")
+const User = require("../schemas/UserSchema")
 
+router.get("/", (req, res, next) => {
 
-// ********** Using Modules **********
-const router = express.Router();
-
-
-// ********** Get Request: /profile/ **********
-router.get('/', function(req, res) {
-    const payload = createPayload(req.session.user);
-    res.status(200).render('searchPage', payload);
-});
-
-
-router.get('/:selectedTab', function(req, res) {
-    const payload = createPayload(req.session.user);
-    payload.selectedTab = req.params.selectedTab;
-    res.status(200).render('searchPage', payload);
+    var payload = createPayload(req.session.user)
+    res.status(200).render("searchPage", payload)
 })
 
+router.get("/:selectedTab", (req, res, next) => {
+    var payload = createPayload(req.session.user)
+    payload.selectedTab = req.params.selectedTab
+    res.status(200).render("searchPage", payload)
+})
 
 function createPayload(userLoggedIn) {
     return {
-        pageTitle: `Search`,
+        pageTitle: "Search page",
         userLoggedIn: userLoggedIn,
-        search: 'active'
+        userLoggedInJs: JSON.stringify(userLoggedIn)
     }
 }
 
-
-module.exports = router;
+module.exports = router

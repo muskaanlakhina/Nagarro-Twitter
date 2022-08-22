@@ -1,0 +1,78 @@
+mixin createPostForm(userLoggedIn)
+    .postFormContainer
+        .userImageContainer
+            img(src=userLoggedIn.profilePic, alt="User's profile picture")
+        .textareaContainer
+            textarea#postTextarea(placeholder="What's up?", maxlength="140")
+            .buttonsContainer
+                button#submitPostBtn(disabled="") Post
+
+mixin createReplyModal(userLoggedIn)
+    #replyModal.modal.fade(tabindex='-1', role='dialog', aria-labelledby='replyModalLabel', aria-hidden='true')
+        .modal-dialog(role='document')
+            .modal-content
+                .modal-header
+                    h5#replyModalLabel.modal-title Reply
+                    button.close(type='button', data-dismiss='modal', aria-label='Close')
+                    span(aria-hidden='true') &times;
+                .modal-body
+                    #originalPostContainer
+                    .postFormContainer
+                        .userImageContainer
+                            img(src=userLoggedIn.profilePic, alt="User's profile picture")
+                        .textareaContainer
+                            textarea#replyTextarea(placeholder="What's happening?", maxlength="140")
+                .modal-footer
+                    button.btn.btn-secondary(type='button', data-bs-dismiss='modal') Close
+                    button#submitReplyButton.btn.btn-primary(type='button', class="modalBtn", disabled="") Reply
+
+mixin createFollowButton(user, isFollowing)
+    //- with a - is how you create a variable in PUG
+    - text = isFollowing ? "Following" : "Follow"
+    - buttonClass = isFollowing ? "followButton following" : "followButton"
+    button(class=buttonClass, data-user=user._id) #{text}
+
+mixin createTab(name, href, isSelected)
+    - className = isSelected ? "tab active" : "tab"
+    a(href=href, class=className)
+        span #{name} 
+
+
+mixin createImageUploadModal()
+    #imageUploadModal.modal.fade(tabindex='-1', role='dialog', aria-labelledby='imageUploadModalLabel', aria-hidden='true')
+        .modal-dialog(role='document')
+            .modal-content
+                .modal-header
+                    h5#imageUploadModalLabel.modal-title Upload new profile picture
+                    button.close(type='button', data-dismiss='modal', aria-label='Close')
+                    span(aria-hidden='true') &times;
+                .modal-body
+                    input#filePhoto(type="file", name="filePhoto")
+
+                    .imagePreviewContainer
+                        img#imagePreview
+
+                .modal-footer
+                    button.btn.btn-secondary(type='button', data-bs-dismiss='modal') Cancel
+                    button#imageUploadButton.btn.btn-primary(type='button', class="modalBtn") Save
+
+
+mixin createUserUpdateModal()
+    #userUpdateModal.modal.fade(tabindex='-1', role='dialog', aria-labelledby='userUpdateModalLabel', aria-hidden='true')
+        .modal-dialog(role='document')
+            .modal-content
+                .modal-header
+                    h5#userUpdateLabel.modal-title Update information
+                    button.close(type='button', data-dismiss='modal', aria-label='Close')
+                    span(aria-hidden='true') &times;
+                .modal-body
+                    form#updateUserInfo(method="post", onsubmit="event.preventDefault()")
+
+                        input#firstName(type="text", name="firstName", placeholder="First name", value=firstName, required="" )
+                        input#lastName(type="text", name="lastName", placeholder="Last name", value=lastName, required="" )
+                        input#username(type="text", name="username", placeholder="Username", value=username, required="")
+                        input#email(type="email", name="email", placeholder="Email", value=email, required="")
+
+                .modal-footer
+                    button.btn.btn-secondary(type='button', data-bs-dismiss='modal') Cancel
+                    button#userUpdateButton.btn.btn-primary(type='button', class="modalBtn") Save

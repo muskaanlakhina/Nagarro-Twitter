@@ -1,250 +1,203 @@
-// ********** Importing Modules **********
-const express = require('express');
-const Post = require('../../schema/postSchema');
-const User = require('../../schema/userSchema');
-const Notification = require('../../schema/notificationSchema');
+const express = require("express");
+const app = express()
+const router = express.Router()
+const bodyParser = require("body-parser")
+const User = require("../../schemas/UserSchema")
+const Post = require("../../schemas/PostSchema")
+
+app.use(bodyParser.urlencoded({ extended: false}))
 
 
-// ********** Using Modules **********
-const router = express.Router();
 
+router.get("/", async (req, res, next) => {
 
-// ********** Post Request: /api/posts/ **********
-router.post('/', function(req, res) {
-    if(!req.body.content) {
-        console.log('Content not sent with the request');
-        return res.sendStatus(400).redirect('/');
+    var searchObject = req.query
+
+    if(searchObject.isReply !== undefined) {
+        var isReply = searchObject.isReply == "true"
+        // Using the mongoDB operator to check if replyTo exist for the post.
+        searchObject.replyTo = { $exists: isReply }
+        delete searchObject.isReply
     }
-    const postData = new Post({
-        content: req.body.content,
-        postedBy: req.session.user,
-        replyTo: req.body.replyTo,
-        pinned: false
-    });
-    postData.save().then(async function(newPost) {
-        newPost = await User.populate(newPost, {path: 'postedBy'});
-        newPost = await Post.populate(newPost, {path: 'replyTo'});
-        newPost = await Post.populate(newPost, {path: 'replyTo.replyTo'});
-        newPost = await User.populate(newPost, {path: 'replyTo.replyTo.postedBy'});
-        newPost = await User.populate(newPost, {path: 'replyTo.postedBy'});
-        if(newPost.replyTo) {
-            await Notification.insertNotification(newPost.replyTo.postedBy, req.session.user, 'reply', newPost._id); 
+
+    // $options: "i" means that the search will not be case sensitive.
+    if(searchObject.search !== undefined) {
+        searchObject.textContent = { $regex: searchObject.search, $options: "i" }
+        delete searchObject.search
+    }
+
+    if(searchObject.followingOnly !== undefined){
+        var followingOnly = searchObject.followingOnly == "true"
+
+        if(followingOnly) {
+            // Loop over all users the user is following from the schemas following array.
+            var objectIds = []
+            
+            if(!req.session.user.following) {
+                req.session.user.following = []
+            }
+            req.session.user.following.forEach(user => {
+                objectIds.push(user)
+            })
+
+            objectIds.push(req.session.user._id)
+            searchObject.postedBy = { $in: objectIds }
         }
-        res.status(201).send(newPost);
-    }).catch(function(err) {
-        console.log(err);
-        res.sendStatus(400);
-    });
-});
 
+        delete searchObject.followingOnly
+    }
 
-// ********** Get Request: /api/posts/ **********
-router.get('/', async function(req, res) {
-    const objectIds = [...req.session.user.following];
-    objectIds.push(req.session.user._id);
-    const posts = await findAndPopulate({postedBy: {$in: objectIds}});
-    if(posts === null) {
-        res.sendStatus(400);
-    }
-    else {
-        posts.sort(function(a, b) {
-            return a.createdAt - b.createdAt;
-        });
-        res.status(201).send(posts);
-    }
-});
-
-
-// ********** Get Request: /api/posts/search/_value_ **********
-router.get('/search/:value', async function(req, res) {
-    const posts = await findAndPopulate({content: {$regex: req.params.value, $options: 'i' }});
-    if(posts === null) {
-        res.sendStatus(400);
-    }
-    else {
-        posts.sort(function(a, b) {
-            return a.createdAt - b.createdAt;
-        });
-        res.status(201).send(posts);
-    }
-});
-
-// ********** Get Request: /api/posts/_id_ **********
-router.get('/:postId', async function(req, res) {
-    const result = {};
-    const postData = await findAndPopulate({_id: req.params.postId});
-    if(postData[0].replyTo) {
-        result.replyTo = postData[0].replyTo;
-    }
-    result.postData = postData;
-    result.replies = await findAndPopulate({replyTo: req.params.postId});
-    res.status(200).send(result);
+    var results = await getPosts(searchObject)
+    res.status(200).send(results)
 })
 
+router.get("/start", async (req, res, next) => {
 
-// ********** Get Request: /api/posts/_id_/posts **********
-router.get('/:id/posts', async function(req, res) {
-    const posts = await findAndPopulate({$or: [
-        {postedBy: req.params.id, replyTo: {$exists: false}},
-        {postedBy: req.params.id, retweetData: {$exists: true}}
-    ]});
-    res.status(201).send(posts);
-});
+    var searchObject = req.query
 
+    if(searchObject.isReply !== undefined) {
+        var isReply = searchObject.isReply == "true"
+        // Using the mongoDB operator to check if replyTo exist for the post.
+        searchObject.replyTo = { $exists: isReply }
+        delete searchObject.isReply
+    }
 
-router.get('/:userId/pinnedPost', async function(req, res) {
-    const postData = await findAndPopulate({postedBy: req.params.userId, pinned: true})
-    res.status(200).send(postData[0]);
+    var results = await getPosts(searchObject)
+    res.status(200).send(results)
 })
 
+router.get("/:id", async (req, res, next) => {
 
-// ********** Get Request: /api/posts/_id_/posts **********
-router.get('/:id/posts', async function(req, res) {
-    const posts = await findAndPopulate({$or: [
-        {postedBy: req.params.id, replyTo: {$exists: false}},
-        {postedBy: req.params.id, retweetData: {$exists: true}}
-    ]});
-    res.status(201).send(posts);
-});
+    var postId = req.params.id
 
+    var postData = await getPosts({ _id: postId })
+    // We know we only ever want one since it is one ID and getPosts function search is
+    // by find() and not findOne().
+    postData = postData[0]
 
-// ********** Get Request: /api/posts/_id_/replies **********
-router.get('/:id/replies', async function(req, res) {
-    const posts = await findAndPopulate({
-        postedBy: req.params.id,
-        replyTo: {$exists: true},
-        retweetData: {$exists: false}
-    });
+    var results = {
+        postData: postData
+    }
     
-    res.status(201).send(posts);
+    if(postData.replyTo !== undefined) {
+        results.replyTo = postData.replyTo
+    }
+
+    // Checks if the post has a replyTo and matches the postId.
+    results.replies = await getPosts({ replyTo: postId })
+
+    res.status(200).send(results)
 })
 
-
-// ********** Patch Request (Like): /api/posts/_id_/like **********
-router.patch('/:id/like', async function(req, res) {
-    const postId = req.params.id;
-    const userId = req.session.user._id;
-    const isLiked = req.session.user.likes?.includes(postId);
-    const option = isLiked? '$pull' : '$addToSet';
-    // Insert user like
-    req.session.user = await User.findByIdAndUpdate(userId, 
-        {[option]: {likes: postId}},
-        {new: true}
-    ).catch(function(err) {
-        console.log(err);
-        res.sendStatus(400);
-    });
-    // Insert post like
-    const post = await Post.findByIdAndUpdate(postId, 
-        {[option]: {likes: userId}}, 
-        {new: true}
-    ).catch(function(err) {
-        console.log(err);
-        res.sendStatus(400);
-    });
-    if(!isLiked) {
-        await Notification.insertNotification(post.postedBy, userId, 'postLike', post._id)
-        .catch((err) => console.log(err));
+router.post("/", async (req, res, next) => {
+    if(!req.body.content){
+        console.log("Content param not sent with request")
+        return res.sendStatus(400)
     }
-    res.send(post);
-});
 
+    // Saving the data in the post in the PostSchema variables.
+    var postData = {
+        textContent: req.body.content,
+        postedBy: req.session.user
+    }
 
-// ********** Patch Request (Retweet): /api/posts/_id_/retweet **********
-router.post('/:id/retweet', async function(req, res) {
-    const postId = req.params.id;
-    const userId = req.session.user._id;
-    const deleteRetweet = await Post.findOneAndDelete({postedBy: userId, retweetData: postId})
-    .catch(function(err) {
-        console.log(err);
+    if(req.body.replyTo){
+        postData.replyTo = req.body.replyTo
+    }
+
+    // This create function returns a promise.
+    Post.create(postData)
+    .then(async newPost => {
+        newPost = await User.populate(newPost, {path: "postedBy"})
+
+        res.status(201).send(newPost)
+    })
+    .catch(error => {
+        console.log(error)
+        res.sendStatus(400)
+    })
+})
+
+router.put("/:id/like", async (req, res, next) => {
+
+    var postId = req.params.id
+    var userId = req.session.user._id
+
+    // Checking if they have a likes array already.
+    var isLiked = req.session.user.likes && req.session.user.likes.includes(postId)
+
+    var option = isLiked ? "$pull" : "$addToSet"
+
+    // Insert user like
+    req.session.user = await User.findByIdAndUpdate(userId, { [option]: {likes: postId} }, {new: true})
+    .catch(error => {
+        console.log(error)
+        res.sendStatus(400)
+    })
+
+    // Insert post like
+    var post = await Post.findByIdAndUpdate(postId, { [option]: {likes: postId} }, {new: true})
+    .catch(error => {
+        console.log(error)
+        res.sendStatus(400)
+    })
+
+    res.status(200).send(post)
+})
+
+router.post("/:id/retweet", async (req, res, next) => {
+    var postId = req.params.id;
+    var userId = req.session.user._id;
+
+    // Try and delete retweet
+    var deletedPost = await Post.findOneAndDelete({ postedBy: userId, retweetData: postId })
+    .catch(error => {
+        console.log(error);
         res.sendStatus(400);
     })
-    const option = deleteRetweet? '$pull' : '$addToSet';
-    let repost = deleteRetweet;
-    // Insert user retweet
-    if(!repost) {
-        const newPost = new Post({
-            postedBy: userId,
-            retweetData: postId
-        });
-        const post = await Post.findById(postId);
-        if(post.replyTo) {
-            newPost.replyTo = post.replyTo;
-        }
-        repost = await newPost.save().catch(function(err) {
-            console.log(err);
+
+    var option = deletedPost != null ? "$pull" : "$addToSet";
+
+    var repost = deletedPost;
+
+    if (repost == null) {
+        repost = await Post.create({ postedBy: userId, retweetData: postId })
+        .catch(error => {
+            console.log(error);
             res.sendStatus(400);
-        });
-    }
-    // Update user retweet
-    req.session.user = await User.findByIdAndUpdate(userId, {[option]: {retweets: repost._id}}, {new: true})
-    .catch(function(err) {
-        console.log(err);
-        res.sendStatus(400);
-    });
-
-    // Update post retweet
-    const post = await Post.findByIdAndUpdate(postId, {[option]: {retweetUsers: userId}}, {new: true})
-    .catch(function(err) {
-        console.log(err);
-        res.sendStatus(400);
-    });
-    if(!deleteRetweet) {
-        await Notification.insertNotification(post.postedBy, userId, 'retweet', post._id); 
-    }
-    res.send(post);
-});
-
-// ********** Patch Request (Retweet): /api/posts/_id_ **********
-router.delete('/:postId', async function(req, res) {
-    const post = await Post.findById(req.params.postId);
-    if(post.retweetUsers.includes()) {
-
-    }
-    Post.deleteMany({retweetData: req.params.postId})
-    .catch(function(err) {
-        console.log(err);
-        res.sendStatus(400);
-    });
-    Post.findOneAndDelete({_id: req.params.postId, postedBy: req.session.user._id})
-    .then(res.sendStatus(202))
-    .catch(function(err) {
-        console.log(err);
-        res.sendStatus(400);
-    });
-});
-
-// ********** Patch Request (Pin): /api/posts/_id_ **********
-router.patch('/:postId', async function(req, res) {
-    if(req.body.pinned !== undefined) {
-        await Post.updateMany({postedBy: req.session.user._id}, {pinned: false})
-        .catch(function(err) {
-            console.log(err);
         })
     }
-    Post.findByIdAndUpdate(req.params.postId, req.body)
-    .then(res.sendStatus(204))
-    .catch(function(err) {
-        console.log(err);
-        res.sendStatus(400);
-    });
-});
 
-// Populate Posts utility function
-async function findAndPopulate(query) {
-    let posts = await Post.find(query);
-    posts = await User.populate(posts, {path: 'postedBy'});
-    posts = await Post.populate(posts, {path: 'retweetData'});
-    posts = await User.populate(posts, {path: 'retweetData.postedBy'});
-    posts = await Post.populate(posts, {path: 'retweetData.replyTo'});
-    posts = await Post.populate(posts, {path: 'replyTo'});
-    posts = await Post.populate(posts, {path: 'replyTo.replyTo'});
-    posts = await User.populate(posts, {path: 'replyTo.replyTo.postedBy'});
-    posts = await User.populate(posts, {path: 'replyTo.postedBy'});
-    posts = await User.populate(posts, {path: 'retweetData.replyTo.postedBy'});
-    return posts;
+    // This will either add the repost itself to the users list of retweet or remove it depending on 
+    // what is in the option variable, which is decided above.
+    req.session.user = await User.findByIdAndUpdate(userId, { [option]: { retweets: repost._id } }, { new: true })
+    .catch(error => {
+        console.log(error);
+        res.sendStatus(400);
+    })
+
+    // Insert post like
+    var post = await Post.findByIdAndUpdate(postId, { [option]: { retweetUsers: userId } }, { new: true })
+    .catch(error => {
+        console.log(error);
+        res.sendStatus(400);
+    })
+
+
+    res.status(200).send(post)
+})
+
+async function getPosts(filter) {
+    var results = await Post.find(filter)
+    .populate("postedBy")
+    .populate("retweetData")
+    .populate("replyTo")
+    .sort({"createdAt": -1})
+    .catch(error => console.log(error))
+
+    results = await User.populate(results, {path: "replyTo.postedBy"})
+    return await User.populate(results, {path: "retweetData.postedBy"})
 }
 
-
-
-module.exports = router;
+// Export it so we can use this file in other places.
+module.exports = router

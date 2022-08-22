@@ -1,0 +1,11 @@
+extends layouts/main-layout.pug
+
+block content
+    //- Adds all the content inside this mixin
+    +createPostForm(userLoggedIn)
+    .postContainer
+
+    +createReplyModal(userLoggedIn)
+
+block scripts
+    script(src="/js/start.js")

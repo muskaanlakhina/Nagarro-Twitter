@@ -1,144 +1,98 @@
-// ********** Importing Modules **********
-const express = require('express');
-const User = require('../../schema/userSchema');
-const multer = require('multer');
-const Notification = require('../../schema/notificationSchema');
-const cloudinary = require('cloudinary').v2;
-const { CloudinaryStorage } = require('multer-storage-cloudinary');
+const express = require("express");
+const app = express()
+const router = express.Router()
+const bodyParser = require("body-parser")
+const multer = require("multer")
+const path = require("path")
+const upload = multer({ dest: "uploads/"})
+const fs = require("fs")
+const User = require("../../schemas/UserSchema")
+const Post = require("../../schemas/PostSchema")
 
-// ********** Using Modules **********
-const router = express.Router();
-cloudinary.config({
-    cloud_name: process.env.CLOUDINARY_NAME,
-    api_key: process.env.CLOUDINARY_API_KEY,
-    api_secret: process.env.CLOUDINARY_API_SECRET,
-    secure: true
-});
+app.use(bodyParser.urlencoded({ extended: false }));
 
-const storage = new CloudinaryStorage({
-    cloudinary: cloudinary,
-    params: async (req, file) => {
-        return {
-            folder: 'twitter',
-            public_id: `${req.session.user._id}_${req.path.substr(1)}`,
-        };
+router.get("/", async (req, res, next) => {
+    var searchObj = req.query;
+
+    if(req.query.search !== undefined) {
+        searchObj = {
+            $or: [
+                { firstname: { $regex: req.query.search, $options: "i" }},
+                { lastname: { $regex: req.query.search, $options: "i" }},
+                { username: { $regex: req.query.search, $options: "i" }},
+            ]
+        }
     }
-});
-const upload = multer({ storage: storage });
 
-// ********** Patch Request: /api/users/_id_/follow **********
-router.patch('/:id/follow', async function(req, res) {
-    const userId = req.params.id;
-    const userLoggedIn = req.session.user._id;
-    const user = await User.findById(userId);
-    if(!user) {
-        return res.sendStatus(404);
-    }
-    const isFollowing = user.followers?.includes(userLoggedIn);
-    const option = isFollowing? '$pull' : '$addToSet';
-    req.session.user = await User.findByIdAndUpdate(userLoggedIn,
-        {[option]: {following: userId}},
-        {new: true}).catch(function(err) {
-            console.log(err);
-            res.sendStatus(400);
-    });
-    User.findByIdAndUpdate(userId, {[option]: {followers: userLoggedIn}})
-    .catch(function(err) {
-        console.log(err);
+    User.find(searchObj)
+    .then(results => res.status(200).send(results))
+    .catch(error => {
+        console.log(error);
         res.sendStatus(400);
-    });
-    if(!isFollowing) {
-        await Notification.insertNotification(userId, userLoggedIn, 'follow', userLoggedIn);
-    }
-    res.status(200).send(req.session.user);
+    })
 })
 
+router.put("/:userId/follow", async (req, res, next) => {
+    var userId = req.params.userId
 
-// ********** Get Request: /api/users/_id_/following **********
-router.get('/:id/following', function(req, res) {
-    User.findById(req.params.id)
-    .populate('following')
-    .then(function(users) {
-        res.status(200);
-        res.send(users);
+    var user = await User.findById(userId)
+
+    if(user == null) return res.sendStatus(404)
+
+    // First checking that followers exist. 
+    var isFollowing = user.followers && user.followers.includes(req.session.user._id)
+    var option = isFollowing ? "$pull" : "$addToSet"
+
+    req.session.user = await User.findByIdAndUpdate(req.session.user._id, { [option]: {following: userId} }, { new: true })
+    .catch(error => {
+        console.log(error)
+        res.sendStatus(400)
     })
-    .catch(function(err) {
-        console.log(err);
-        res.sendStatus(400);
+
+    await User.findByIdAndUpdate(userId, { [option]: {followers: req.session.user._id} })
+    .catch(error => {
+        console.log(error)
+        res.sendStatus(400)
     })
-});
 
+    res.status(200).send(req.session.user._id)
 
-// ********** Get Request: /api/users/_id_/followers **********
-router.get('/:id/followers', function(req, res) {
-    User.findById(req.params.id)
-    .populate('followers')
-    .then(function(users) {
-        res.status(200);
-        res.send(users);
-    })
-    .catch(function(err) {
-        console.log(err);
-        res.sendStatus(400);
-    })
-});
+})
 
-
-// ********** Get Request: /api/users/search/_value_ **********
-router.get('/search/:value', async function(req, res) {
-    const posts = await User.find({ $or: [
-        {firstName: {$regex: req.params.value, $options: 'i' }},
-        {lastName: {$regex: req.params.value, $options: 'i' }},
-        {username: {$regex: req.params.value, $options: 'i' }},
-    ]});
-    if(posts === null) {
-        res.sendStatus(400);
-    }
-    else {
-        posts.sort(function(a, b) {
-            return a.createdAt - b.createdAt;
-        });
-        res.status(201).send(posts);
-    }
-});
-
-
-
-// ********** Post Request: /api/users/profilePicture/ **********
-router.post('/profilePicture', upload.single('croppedImage'), function(req, res) {
+router.post("/profilePicture", upload.single("croppedImage"), async (req, res, next) => {
     if(!req.file) {
-        console.log('No file uploaded with the ajax request');
+        console.log("No file uploaded with ajax request.");
         return res.sendStatus(400);
     }
-    const userId = req.session.user._id;
-    User.findByIdAndUpdate(userId, {profilePic: req.file.path}, {new: true})
-    .then(function(user) {
-        req.session.user = user;
-        res.status(200).send(user);
+
+    var filePath = `/uploads/images/${req.file.filename}.png`;
+    var tempPath = req.file.path;
+    var targetPath = path.join(__dirname, `../../${filePath}`);
+
+    fs.rename(tempPath, targetPath, async error => {
+        if(error != null) {
+            console.log(error);
+            return res.sendStatus(400);
+        }
+
+        req.session.user = await User.findByIdAndUpdate(req.session.user._id, { profilePic: filePath }, { new: true });
+        res.sendStatus(204);
     })
-    .catch(function(err) {
-        console.log(err);
-        res.sendStatus(400);
-    });
+
 });
 
+router.put("/:userId", async (req, res) => {
+    var userId = req.params.userId
+    console.log(userId)
 
-// ********** Post Request: /api/users/coverPhoto/ **********
-router.post('/coverPhoto', upload.single('croppedImage'), function(req, res) {
-    if(!req.file) {
-        console.log('No file uploaded with the ajax request');
-        return res.sendStatus(400);
-    }
-    const userId = req.session.user._id;
-    User.findByIdAndUpdate(userId, {coverPhoto: req.file.path}, {new: true})
-    .then(function(user) {
-        req.session.user = user;
-        res.status(200).send(user);
-    }).catch(function(err) {
-        console.log(err);
-        res.sendStatus(400);
-    });
-});
+    await User.findByIdAndUpdate(userId, { firstname: req.body.firstName, lastname: req.body.lastName, username: req.body.username, email: req.body.email }, { new: true } )
+    .then(results => res.sendStatus(204))
+    .catch(error => {
+        console.log(error)
+        res.sendStatus(400)
+    })
 
+})
 
 module.exports = router;
+

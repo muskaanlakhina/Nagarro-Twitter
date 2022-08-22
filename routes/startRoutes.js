@@ -1,4 +1,3 @@
-// Declaring what dependency I want.
 const express = require("express");
 const app = express()
 const router = express.Router()
@@ -6,20 +5,17 @@ const bodyParser = require("body-parser")
 const bcrypt = require("bcryptjs")
 const User = require("../schemas/UserSchema")
 
+router.get("/", (req, res, next) => {
 
-// Handling the routes, not the server = app.
-router.get("/:id", (req, res, next) => {
-
-    const payload = {
-        pageTitle: "View post", 
+    var payload = {
+        pageTitle: "Start page",
         userLoggedIn: req.session.user,
         userLoggedInJs: JSON.stringify(req.session.user),
-        postId: req.params.id
+        profileUser: req.session.user
     }
 
-    res.status(200).render("postPage", payload)
+    res.status(200).render("startPage", payload)
 })
 
 
-// Export it so we can use this file in other places.
 module.exports = router

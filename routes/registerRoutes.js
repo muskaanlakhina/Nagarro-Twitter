@@ -1,62 +1,66 @@
-const express = require('express');
-const User = require('../schema/userSchema');
-const bcrypt = require('bcrypt');
+// Declaring what dependency I want.
+const express = require("express");
+const app = express()
+const router = express.Router()
+const bodyParser = require("body-parser")
+const User = require("../schemas/UserSchema")
+const bcrypt = require("bcryptjs")
 
 
-// ********** Using Modules **********
-const router = express.Router();
+app.set("view engine", "pug")
+// When you need views, go to folder namned views.
+app.set("views", "views")
 
+// It will only contain key value pairs made up of strings or arrays.
+app.use(bodyParser.urlencoded({ extended: false}))
 
-// ********** Get Request: /register/ **********
-router.get('/', function(req, res) {
-    res.render('register');
-});
+// Handling the routes, not the server = app.
+router.get("/", (req, res, next) => {
+    res.status(200).render("register")
+})
 
+router.post("/", async (req, res, next) => {
+    const username = req.body.username.trim()
+    const password = req.body.password
 
-// ********** Post Request: /register/ **********
-router.post('/', async function(req, res) {
-    const firstName = req.body.firstName?.trim();
-    const lastName = req.body.lastName?.trim();
-    const username = req.body.username?.trim();
-    const email = req.body.email?.trim();
-    const password = req.body.password;
-    const payload = req.body;
+    const payload = req.body
 
-    if(firstName && lastName && username && email && password) {
-        const user = await User.findOne({
-            $or: [
-                {username: username},
-                {email: email}
-            ]
-        }).catch(function(err) {
-            console.log(err);
-            payload.errorMessage = 'Something went wrong. Try again later.';
-            res.render('register', payload);
-        });
-        if(!user) {
-            const newUser = new User(req.body);
-            newUser.password = await bcrypt.hash(password, 10);
-            newUser.save(function(err) {
-                if(err) {
-                    console.log('Database user insertion failed.');
-                    res.render('register');
-                }
-                else{
-                    res.render('login', {successMessage: 'Registered Succesfully'});
-                }
-            });
+    if(username && password){
+        // This will go into the database and check for user.
+        const user = await User.findOne({ username: username})
+        .catch((error) => {
+            console.log(error)
+            payload.errorMessage = "Something went wrong."
+            res.status(200).render("register", payload)
+        })
+ 
+        // No user found.
+        // If we didn't find a user, a new user will be created.
+        if(user == null){
+            const data = req.body
+            // We salt the password 2 raised to 10 times.
+            data.password = await bcrypt.hash(password, 10)
+
+            User.create(data)
+            .then((user) => {
+                // We store newly created user in the session of the user property.
+                req.session.user = user
+                return res.redirect("/")
+            })
+
+        // User found.
+        // If we did find a user, we output error message.
+        } else {
+            payload.errorMessage = "Username already exists."
+            res.status(200).render("register", payload)
         }
-        else {
-            if(email == user.email) payload.errorMessage = 'Email already in use';
-            else payload.errorMessage = 'Username already exists, try a different username';
-            res.render('register', payload);
-        }
+    } else {
+        payload.errorMessage = "Make sure each field is filled in."
+        res.status(200).render("register", payload)
     }
-    else {
-        payload.errorMessage = 'Make sure each field has a valid value.';
-        res.render('register', payload);
-    }
-});
+    
+})
 
 
-module.exports = router;
+// Export it so we can use this file in other places.
+module.exports = router

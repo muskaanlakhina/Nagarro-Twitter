@@ -1,71 +1,81 @@
-// Declaring what dependency I want.
 const express = require("express");
-const app = express()
-//const PORT = 3007;
-const middleware = require("./middleware")
-const path = require("path")
-const bodyParser = require("body-parser")
-const mongoose = require("./database")
-const session = require("express-session")
 
-app.set("view engine", "pug")
-// When you need views, go to folder namned views.
-app.set("views", "views")
+const path = require("path");
 
-app.use(bodyParser.urlencoded({ extended: false}))
-// If something might change in the path this is the safer way to write. 
-app.use(express.static(path.join(__dirname, "public")))
+const app = express();
+// create express instance
 
-app.use(session({
-    // We pass in a String and it hashes the session with it. 
-    secret: "oboy",
+const middleware = require("./middleware");
+
+const PORT = 8888;
+
+const mongoose = require("./database");
+
+const session = require("express-session");
+
+app.set("view engine", "pug");
+// say that we want to use pug template engine
+app.set("views", "views");
+// means that our pug views is located in views folder
+
+// Serve public folder as static
+app.use(express.static(path.join(__dirname, "public")));
+
+// Setting Up Session
+// First need Secret Key 
+const SECRET_SENTENCE = "PROVE THEM WRONG";
+app.use(session({ 
+    secret: SECRET_SENTENCE,
     resave: true,
-    // The reasoning behind this is that this will prevent a lot of empty session objects being stored in the session store. 
     saveUninitialized: false
-}))
+}));
 
-// Routes
-const loginRoute = require('./routes/loginRoutes')
-const registerRoute = require('./routes/registerRoutes')
-const logoutRoute = require('./routes/logoutRoutes')
-const postRoute = require('./routes/postRoutes')
-const profileRoute = require('./routes/profileRoutes')
-const startRoute = require('./routes/startRoutes')
-const uploadRoute = require('./routes/uploadsRoutes')
-const searchRoute = require('./routes/searchRoutes')
-
-// Api routes
-const postsApiRoute = require('./routes/api/posts')
-const usersApiRoute = require('./routes/api/users')
-
-app.use("/login", loginRoute)
-app.use("/register", registerRoute)
-app.use("/logout", logoutRoute)
-app.use("/posts", middleware.requireLogin, postRoute)
-app.use("/profile", middleware.requireLogin, profileRoute)
-app.use("/start", startRoute)
-app.use("/uploads", uploadRoute)
-app.use("/search", middleware.requireLogin, searchRoute)
-
-app.use("/api/posts", postsApiRoute)
-app.use("/api/users", usersApiRoute)
-
-// Adding req = request from client and res = response from server parameter.
-app.get("/", middleware.requireLogin, (req, res, next) => {
-
-    const payload = {
-        pageTitle: "Your home page", 
-        userLoggedIn: req.session.user,
-        userLoggedInJs: JSON.stringify(req.session.user)
-    }
-
-    // Render function takes two parameters.
-    // 1. template/page 'home' 2. The payload with the data we want to send to it.
-    res.status(200).render("home", payload)
-})
+// ROUTES
+// For different pages (routes), i will use these routers
+const loginRoute = require('./routes/loginRoutes'); // get the router
+const registerRoute = require('./routes/registerRoutes'); // get the router
+const logoutRoute = require("./routes/logoutRoutes"); // get the router
+// APIs
+const postsAPIRoute = require("./routes/api/posts"); // get the router for api
 
 
-// Telling express to listen to port 3000.
-const server = app.listen(process.env.PORT || 5000, () => {
-    console.log(`Server listening on port`)
-})
+
+// Use Body Parser
+// to parse elements in Request Form
+const bodyParser = require("body-parser");
+// relate body parser with express server (router)
+app.use(bodyParser.urlencoded({extended: false}));
+
+
+// Use this router
+app.use("/login", loginRoute);
+app.use("/register", registerRoute);
+app.use("/logout", logoutRoute);
+
+// Using API Routers
+app.use("/api/posts", postsAPIRoute);
+
+const server = app.listen(process.env.PORT || PORT , () => {
+    console.log("Server is working on PORT " + PORT);
+});
+
+app.get("/", middleware.requireLogin, (request, response, next) => {
+
+    /*
+        we have to pass user information to client as well
+        client must know this user in order to RENDER
+        because we use client side rendering
+    */
+    var payload = {
+        pageTitle: "Home",
+        pageHeading : "Welcome to Twitter, a Connected World",
+        pageDescription : "This is where the World talks to each other.",
+        userLoggedIn: request.session.user, // this is for PUG, we need user logged in in JS
+        userLoggedInJS: JSON.stringify(request.session.user) // push it to the js
+    };
+    
+    const OKAY = 200;
+    //response.status(OKAY).send("Server is ON! :)");
+    response.status(OKAY).render("home", payload);
+});
+

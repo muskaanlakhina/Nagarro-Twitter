@@ -1,447 +1,259 @@
-// Global variable.
-var cropper
+// This javascript file will be used for common things between pages
 
-// Function to enable and disabled the POST button. 
-$("#postTextarea, #replyTextarea").keyup(event => {
-    var textbox = $(event.target)
-    // Trim the value so the user is not able to print a post with only spaces.
-    var value = textbox.val().trim()
+// Getting the text from tweeting area with jQuery
+$("#tweetTextarea").keyup((event) => {
 
-    // This will be true or false wether we are in a modal or not.
-    var isModal = textbox.parents(".modal").length == 1
+    let textarea = $(event.target); // where event happens
+    let value = textarea.val().trim(); // read the value
+    
+    // When the user enters a tweet
+    // Unless it is an empty tweet
+    // Enable the tweet button
 
-    // Choses which btn to highlight depending on if we write in the home post container or
-    // in the reply post container.
-    var submitBtn = isModal ? $("#submitReplyButton") : $("#submitPostBtn")
-
-    if(submitBtn.length == 0) return alert("No submit button found")
-
-    if(value == ""){
-        submitBtn.prop("disabled", true)
-        return
-    }
-    submitBtn.prop("disabled", false)
-})
-
-$("#submitPostBtn, #submitReplyButton").click(() => {
-    var button = $(event.target)
-
-    var isModal = button.parents(".modal").length == 1
-    var textbox = isModal ? $("#replyTextarea") : $("#postTextarea");
-
-    var data = {
-        content: textbox.val()
+    let tweetButton = $("#tweetButton");
+    
+    // might be null
+    if(tweetButton.length == 0){
+        
+        return console.error("tweet button not found");
     }
     
-    if (isModal) {
-        var id = button.data().id;
-        if(id == null) return alert("Button id is null");
-        data.replyTo = id;
-    }
-
-    // Sending the data to the url and adding a callback function.
-    $.post("/api/posts", data, postData => {
-
-        if(postData.replyTo) {
-            location.reload();
-        } else {
-            var html = createPostHtml(postData);
-            $(".postsContainer").prepend(html);
-            textbox.val("");
-            button.prop("disabled", true);
-        }
-    })
-})
-
-// Checking if modal is open using a built in bootstrap event.
-// Then adding the post we want to reply to inside. 
-$("#replyModal").on("show.bs.modal", (event) => {
-    var button = $(event.relatedTarget)
-    var postId = getPostId(button)
-    $("#submitReplyButton").data("id", postId)
-
-    $.get(`/api/posts/${postId}`, results => {
-        outputPosts(results.postData, $("#originalPostContainer") )
-    })
-
-})
-
-// Removing the recently opened modals text, only shown with slow internet connection.
-$("#replyModal").on("hidden.bs.modal", () => {
-    $("#originalPostContainer").html("")
-})
-
-$("#filePhoto").change(function() {    
-    // Making sure there is and array and that the first item is set.
-    if(this.files && this.files[0]) {
-        var reader = new FileReader()
-        reader.onload = (e) => {
-            var image = document.getElementById("imagePreview")
-            image.src = e.target.result
-
-            if(cropper !== undefined){
-                // Built in js function which will destroy the variable.
-                cropper.destroy()
-            }
-
-            cropper = new Cropper(image, {
-                aspectRatio: 1 / 1,
-                background: false
-            })
-        }
-        reader.readAsDataURL(this.files[0])
-    } else {
-        console.log("nope")
-    }
-})
-
-$("#imageUploadButton").click(() => {
-    var canvas = cropper.getCroppedCanvas();
-
-    if(canvas == null) {
-        alert("Could not upload image. Make sure it is an image file.");
+    // button works
+    if(value == ""){
+        // if the tweet is an empty tweet
+        tweetButton.prop("disabled", true); 
+        // keep the button disabled
         return;
     }
 
-    canvas.toBlob((blob) => {
-        var formData = new FormData();
-        formData.append("croppedImage", blob);
+    // if the tweet is not empty
+    // normal tweet
+    // make the button enabled
+    tweetButton.prop("disabled", false);
+    return;
 
-        $.ajax({
-            url: "/api/users/profilePicture",
-            type: "POST",
-            data: formData,
-            // Forces JQuery to not make this into a String (since it is an image). 
-            processData: false,
-            contentType: false,
-            success: () => location.reload()
-        })
-    })
 })
 
-$(document).on("click", "#userUpdateButton", (event) => {
-    const firstName = $("#firstName").val().trim()
-    const lastName = $("#lastName").val().trim()
-    const username = $("#username").val().trim()
-    const email = $("#email").val().trim()
-    
-    $.ajax({
-        url: `/api/users/${profileUserId}`,
-        type: "PUT",
-        data: {
-            firstName,
-            lastName,
-            username,
-            email
-        },
-        success: (data, status, xhr) => {
-            if(xhr.status != 204) {
-                alert("Couldn't update information")
-            } else {
-                location.href = `/profile/${profileUserId}`
-            }
-        }
-    })
-})
+// Listening to the Tweet Button
+$("#tweetButton").click((event) => {
 
-// Since the heart btn is dynamic content, it doesn't load until the page is ready.
-// Which means that the time this code execute, the btns are not on the page.
-$(document).on("click", ".likeBtn", (event) => {
-    var button = $(event.target)
-    var postId = getPostId(button)
-    
-    if(postId === undefined) return
+    let theButton = $(event.target);
 
-    // Since we can't write $.put in ajax.
-    $.ajax({
-        url: `/api/posts/${postId}/like`, 
-        type: "PUT",
-        success: (postData) => {
-            
-            button.find("span").text(postData.likes.length || "")
+    // GET THE TEXT WHEN CLICKED
 
-            if(postData.likes.includes(userLoggedIn._id)){
-                button.addClass("active")
-            } else {
-                button.removeClass("active")
-            }
-        }
-    })
-})
+    let textarea = $("#tweetTextarea");
+    let tweet = textarea.val().trim();
 
-$(document).on("click", ".retweetBtn", (event) => {
-    var button = $(event.target)
-    var postId = getPostId(button)
-    
-    if(postId === undefined) return
-
-    // Since we can't write $.put in ajax.
-    $.ajax({
-        url: `/api/posts/${postId}/retweet`, 
-        type: "POST",
-        success: (postData) => {
-
-            button.find("span").text(postData.retweetUsers.length || "")
-
-            if(postData.retweetUsers.includes(userLoggedIn._id)){
-                button.addClass("active")
-            } else {
-                button.removeClass("active")
-            }
-        }
-    })
-})
-
-
-$(document).on("click", ".post", (event) => {
-    var element = $(event.target)
-    var postId = getPostId(element)
-
-    if(postId !== undefined && !element.is("button")){
-        window.location.href = "/posts/" + postId
-    }
-})
-
-$(document).on("click", ".followButton", (event) => {
-    var button = $(event.target)
-    var userId = button.data().user
-
-    $.ajax({
-        url: `/api/users/${userId}/follow`, 
-        type: "PUT",
-        success: (data, status, xhr) => {
-            if(xhr.status == 404){
-                alert("User not found")
-                return 
-            }
-
-            var difference = 1;
-            if(data.following && data.following.includes(userId)) {
-                button.addClass("following");
-                button.text("Following");
-            }
-            else {
-                button.removeClass("following");
-                button.text("Follow");
-                difference = -1;
-            }
-            
-            var followersLabel = $("#followersValue");
-            if(followersLabel.length != 0) {
-                var followersText = followersLabel.text();
-                followersText = parseInt(followersText);
-                followersLabel.text(followersText + difference);
-            }
-        }
-    })
-})
-
-function getPostId(element) {
-    var isRoot = element.hasClass("post")
-    // .closest is a jquery function that goes up through the DOM three to find a parent with this class. 
-    var rootElement = isRoot ? element : element.closest(".post")
-    var postId = rootElement.data().id
-
-    if(postId === undefined) return alert("Post id is undefined")    
-
-    return postId
-}
-
-function createPostHtml(postData) {
-
-    if(postData == null) return alert("post object is null");
-
-    var isRetweet = postData.retweetData !== undefined;
-    var retweetedBy = isRetweet ? postData.postedBy.username : null;
-    postData = isRetweet ? postData.retweetData : postData;
-    
-    var postedBy = postData.postedBy;
-
-    if(postedBy._id === undefined) {
-        return console.log("User object not populated");
+    // The tweet (i.e. data) for sending to the server
+    let data = {
+        content : tweet
     }
 
-    var displayName = postedBy.username
-    var timestamp = timeDifference(new Date(), new Date(postData.createdAt))
-
-    var retweetText = ""
-    if(isRetweet){
-        retweetText = `<span>
-                        <i class="fa-solid fa-retweet"></i>
-                        Retweeted by <a href=${retweetedBy}>@${retweetedBy}</a>
-                    </span>`
-    }
-
-    var replyFlag = "";
-    if(postData.replyTo && postData.replyTo._id) {
+    // When clicked, SEND AN AJAX REQUEST TO THE SERVER
+    $.post("/api/posts", data, (postTweet, status, xhr) => {
+        // After the api respons to the add tweet
+        // it will send post-tweet here
         
-        if(!postData.replyTo._id) {
-            return alert("Reply to is not populated");
-        }
-        else if(!postData.replyTo.postedBy._id) {
-            return alert("Posted by is not populated");
-        }
+        let htmlCode = createTweetHTML(postTweet);
+        // create html code for embedding the tweet
+        
+        $(".postsContainer").prepend(htmlCode);
+        // add this html code to the posts container
 
-        var replyToUsername = postData.replyTo.postedBy.username;
-        replyFlag = `<div class='replyFlag'>
-                        Replying to <a href='/profile/${replyToUsername}'>@${replyToUsername}<a>
-                    </div>`;
+        textarea.val("");
+        // forget about the tweet in the tweet area
 
+        theButton.prop("disabled", true);
+        // disable the tweet button
+    })
+
+})
+
+// Listening to the Like Buttons
+$(document).on("click", ".likeButton", () => {
+    /*
+        this jQuery code listenes to the all like buttons on the page
+    */
+
+    let heartButton = $(event.target); // which like button is pressed ?
+    let tweetID = getTweetIDFromElement(heartButton);
+
+    if(tweetID === undefined) return;
+    
+    /*
+        What will happen when like button clicked?
+        Client will make a HTTP PUT REQUEST to the API
+        and API will decide whether this user has liked 
+        this post before or not
+    */
+
+    $.ajax({
+        url: `api/posts/${tweetID}/like`,
+        type: "PUT",
+        success: (postData) => {
+
+            // Update The Button to Show New Number of Likes
+            heartButton.find("span").text(postData.likes.length || "");
+            // if there is no like, do not display any text, such as text 0.
+
+            let imageInsideHeartButton = heartButton.find("i");
+            // Find image in like button, in order to change it when like is pressed
+            
+            /* Changing button color when Like Button is Pressed */
+
+            // Check whether this user has liked this post or not
+            let hasThisUserLikedThisPost = postData.likes.includes(userLoggedIn._id);
+
+            if(hasThisUserLikedThisPost){
+                // make the like button ACTIVE
+                heartButton.addClass("active");
+
+                // Remove class of image inside heart button
+                imageInsideHeartButton.removeClass();
+                // And RENDER FULL HEART ICON
+                imageInsideHeartButton.addClass("fas");
+                imageInsideHeartButton.addClass("fa-heart");
+                
+            }
+            else{
+                // make the like button DE-ACTIVE
+                heartButton.removeClass("active");
+
+                // Remove FULL HEART ICON from the image inside heart button
+                imageInsideHeartButton.removeClass();
+                // And RENDER EMPTY HEART ICON
+                imageInsideHeartButton.addClass("far");
+                imageInsideHeartButton.addClass("fa-heart");
+                
+            }
+        }
+    })
+    
+})
+
+function createTweetHTML(tweet){
+    /*
+        This function will create HTML code for this tweet
+        i.e. Render this tweet
+    */
+
+    let postedBy = tweet.postedBy;
+
+    let timestamp = timeDifference(new Date(), new Date(tweet.createdAt));
+    // ... hours ago, ... minutes ago like this
+    // add this to rendering
+
+    // TWO TYPES OF RENDERING
+    // 1. Verified Accounts
+    // 2. Not Verified Accounts
+
+    const isVerified = postedBy.verifiedAccount;
+
+    // Source for verification icon
+    let verificationSource = ""; // empty initially
+
+    if(isVerified){
+        // If this account is verified
+        verificationSource = '/images/icons/verifiedAccount.png'
+    }
+    else{
+        // If not verified, or null
+        verificationSource = "";
     }
 
-    return `<div class="post" data-id="${postData._id}">
-                <div class="postActionContainer">
-                    ${retweetText}
-                </div>
-                <div class="mainContainer">
-                    <div class="userImageContainer">
-                        <img src="${postedBy.profilePic}">
+    /* 
+        PROBLEM: Whenever the page loads, like and retweets buttons disappers
+        we need to remember whether this user has liked this post or not before
+        so get this information first
+    */
+
+    let likeButtonActiveClass = 
+                tweet.likes.includes(userLoggedIn._id) ? "active" : "";
+    /* NOW WE KNOW, inject this to html now */
+    
+    // Also render heart icons based on activity.
+    let heartIconClass = "";
+    if(likeButtonActiveClass){
+        // if this user has liked the tweet
+        // render full heart icon 
+        heartIconClass = "fas fa-heart";
+    }
+    else{
+        // if this user HAS NOT LIKED the tweet
+        // render empty heart icon
+        heartIconClass = "far fa-heart";
+    }
+
+    return `<div class = 'post' data-id = '${tweet._id}'>
+
+                <div class = 'mainContentContainer'>
+                    <div class = 'userImageContainer'>
+                        <img src = '${postedBy.profilePicture}'>
                     </div>
-                    <div class="postContentContainer">
-                        <div class="header">
-                            <a href="/profile/${postedBy.username}">${displayName}</a>
-                            <span class="date">${timestamp}</span>
+                    <div class = 'postContentContainer'>
+                        <div class = 'header'>
+                            <a href = '/profile/${postedBy.username}' class = 'displayName'>${postedBy.name}</a>
+                            <img src = '${verificationSource}' class = 'verificationBadge'> </img>
+                            <span class = 'username'>@${postedBy.username}</span>
+                            <span class = 'middle-point'>·</span>
+                            <span class = 'date'>${timestamp}</span>
                         </div>
-                        ${replyFlag}
-                        <div class="postBody">
-                            <span>${postData.textContent}</span>
+                        <div class = 'postBody'>
+                            <span>${tweet.content}</span>
                         </div>
-                        <div class="postFooter">
-                            <div class='postBtnContainer'>
-                                <button data-bs-toggle='modal' data-bs-target='#replyModal'>
+                        <div class = 'postFooter'>
+                            <div class = 'postButtonContainer'>
+                                <button>
                                     <i class='far fa-comment'></i>
                                 </button>
                             </div>
-                            <div class="postBtnContainer green">
-                                <button class="retweetBtn">
-                                    <i class="fa-solid fa-retweet"></i>
-                                    <span>${postData.retweetUsers.length || ""}</span>
+                            <div class = 'postButtonContainer'>
+                                <button>
+                                    <i class='far fa-retweet'></i>
                                 </button>
                             </div>
-                            <div class="postBtnContainer red">
-                                <button class="likeBtn">
-                                    <i class="far fa-heart"></i>
-                                    <span>${postData.likes.length || ""}</span>
+                            <div class = 'postButtonContainer red'>
+                                <button class = "likeButton ${likeButtonActiveClass}">
+                                    <i class='${heartIconClass}'></i>
+                                    <span>${tweet.likes.length || ""}</span>
                                 </button>
                             </div>
                         </div>
+                    
                     </div>
                 </div>
-            </div>`
-}
-
-function timeDifference(current, previous) {
-
-    var msPerMinute = 60 * 1000;
-    var msPerHour = msPerMinute * 60;
-    var msPerDay = msPerHour * 24;
-    var msPerMonth = msPerDay * 30;
-    var msPerYear = msPerDay * 365;
-
-    var elapsed = current - previous;
-
-    if (elapsed < msPerMinute) {
-        if(elapsed/1000 < 30) return "Just now"
-
-         return Math.round(elapsed/1000) + ' seconds ago';   
-    }
-
-    else if (elapsed < msPerHour) {
-         return Math.round(elapsed/msPerMinute) + ' minutes ago';   
-    }
-
-    else if (elapsed < msPerDay ) {
-         return Math.round(elapsed/msPerHour ) + ' hours ago';   
-    }
-
-    else if (elapsed < msPerMonth) {
-        return Math.round(elapsed/msPerDay) + ' days ago';   
-    }
-
-    else if (elapsed < msPerYear) {
-        return Math.round(elapsed/msPerMonth) + ' months ago';   
-    }
-
-    else {
-        return Math.round(elapsed/msPerYear ) + ' years ago';   
-    }
-}
-
-function outputPosts(results, container) {
-    container.html("");
-
-    if(!Array.isArray(results)) {
-        results = [results];
-    }
-
-    results.forEach(result => {
-        var html = createPostHtml(result)
-        container.append(html);
-    });
-
-    if (results.length == 0) {
-        container.append("<span class='noResults'>Nothing to show.</span>")
-    }
-}
-
-function outputPostsWithReplies(results, container) {
-    container.html("");
-
-    if(results.replyTo !== undefined && results.replyTo._id !== undefined) {
-        var html = createPostHtml(results.replyTo)
-        container.append(html);
-    }
-
-    var mainPostHtml = createPostHtml(results.postData)
-    container.append(mainPostHtml);
-
-    results.replies.forEach(result => {
-        var html = createPostHtml(result)
-        container.append(html);
-    });
-
-    if (results.length == 0) {
-        container.append("<span class='noResults'>Nothing to show.</span>")
-    }
-}
-
-function outputUsers(results, container) {
-    container.html("");
-
-    results.forEach(result => {
-        var html = createUserHtml(result, true);
-        container.append(html);
-    });
-
-    if(results.length == 0) {
-        container.append("<span class='noResults'>No results found</span>")
-    }
-}
-
-function createUserHtml(userData, showFollowButton) {
-
-    var name = userData.firstName + " " + userData.lastName;
-    var isFollowing = userLoggedIn.following && userLoggedIn.following.includes(userData._id);
-    var text = isFollowing ? "Following" : "Follow"
-    var buttonClass = isFollowing ? "followButton following" : "followButton"
-
-    var followButton = "";
-    if (showFollowButton && userLoggedIn._id != userData._id) {
-        followButton = `<div class='followButtonContainer'>
-                            <button class='${buttonClass}' data-user='${userData._id}'>${text}</button>
-                        </div>`;
-    }
-
-    return `<div class='user'>
-                <div class='userImageContainer'>
-                    <img src='${userData.profilePic}'>
-                </div>
-                <div class='userDetailsContainer'>
-                    <div class='header'>
-                        <a href='/profile/${userData.username}'>${name}</a>
-                        <span class='username'>@${userData.username}</span>
-                    </div>
-                </div>
-                ${followButton}
             </div>`;
+    
+}
+
+function getTweetIDFromElement(element){
+    /*
+        this function will return the id of the tweet
+        from an element
+        will be used for retweet buttons, like buttons, click to a post
+    */
+
+    // If the clicked element is THE ROOT ELEMENT
+    const isThisRootElement = element.hasClass("post"); 
+    // if this element has the class post, this is the root element
+
+    // get the root element, because only it has the tweet id data
+    let rootElement = null;
+    if(isThisRootElement){
+        rootElement = element; // root element is this element
+    }
+    else{
+        // root element is the closest element that has class post
+        rootElement = element.closest(".post");
+    }
+
+    let tweetID = rootElement.data().id;
+
+    if(tweetID === undefined){
+        // if it does not have a tweet id
+        alert("tweet id undefined");
+    }
+
+    return tweetID;
+
 }

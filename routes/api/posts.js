@@ -1,203 +1,163 @@
+// POSTS API
+// Responsible for all the post operations
 const express = require("express");
-const app = express()
-const router = express.Router()
-const bodyParser = require("body-parser")
-const User = require("../../schemas/UserSchema")
-const Post = require("../../schemas/PostSchema")
 
-app.use(bodyParser.urlencoded({ extended: false}))
+const app = express();
+// create an express instance
 
+// use body parser
+// will be used for parsing the http request for tweets
+const bodyParser = require("body-parser");
+// relate this body parser to the express server
+app.use(bodyParser.urlencoded({extended: false}));
 
+// SCHEMAS
+const User = require("../../schemas/UserSchema");
+// in order to access User collections (table)
+const Post = require("../../schemas/PostSchema");
+// in order to access Post collections (table)
 
-router.get("/", async (req, res, next) => {
+const router = express.Router();
 
-    var searchObject = req.query
-
-    if(searchObject.isReply !== undefined) {
-        var isReply = searchObject.isReply == "true"
-        // Using the mongoDB operator to check if replyTo exist for the post.
-        searchObject.replyTo = { $exists: isReply }
-        delete searchObject.isReply
-    }
-
-    // $options: "i" means that the search will not be case sensitive.
-    if(searchObject.search !== undefined) {
-        searchObject.textContent = { $regex: searchObject.search, $options: "i" }
-        delete searchObject.search
-    }
-
-    if(searchObject.followingOnly !== undefined){
-        var followingOnly = searchObject.followingOnly == "true"
-
-        if(followingOnly) {
-            // Loop over all users the user is following from the schemas following array.
-            var objectIds = []
-            
-            if(!req.session.user.following) {
-                req.session.user.following = []
-            }
-            req.session.user.following.forEach(user => {
-                objectIds.push(user)
-            })
-
-            objectIds.push(req.session.user._id)
-            searchObject.postedBy = { $in: objectIds }
-        }
-
-        delete searchObject.followingOnly
-    }
-
-    var results = await getPosts(searchObject)
-    res.status(200).send(results)
-})
-
-router.get("/start", async (req, res, next) => {
-
-    var searchObject = req.query
-
-    if(searchObject.isReply !== undefined) {
-        var isReply = searchObject.isReply == "true"
-        // Using the mongoDB operator to check if replyTo exist for the post.
-        searchObject.replyTo = { $exists: isReply }
-        delete searchObject.isReply
-    }
-
-    var results = await getPosts(searchObject)
-    res.status(200).send(results)
-})
-
-router.get("/:id", async (req, res, next) => {
-
-    var postId = req.params.id
-
-    var postData = await getPosts({ _id: postId })
-    // We know we only ever want one since it is one ID and getPosts function search is
-    // by find() and not findOne().
-    postData = postData[0]
-
-    var results = {
-        postData: postData
-    }
-    
-    if(postData.replyTo !== undefined) {
-        results.replyTo = postData.replyTo
-    }
-
-    // Checks if the post has a replyTo and matches the postId.
-    results.replies = await getPosts({ replyTo: postId })
-
-    res.status(200).send(results)
-})
-
-router.post("/", async (req, res, next) => {
-    if(!req.body.content){
-        console.log("Content param not sent with request")
-        return res.sendStatus(400)
-    }
-
-    // Saving the data in the post in the PostSchema variables.
-    var postData = {
-        textContent: req.body.content,
-        postedBy: req.session.user
-    }
-
-    if(req.body.replyTo){
-        postData.replyTo = req.body.replyTo
-    }
-
-    // This create function returns a promise.
-    Post.create(postData)
-    .then(async newPost => {
-        newPost = await User.populate(newPost, {path: "postedBy"})
-
-        res.status(201).send(newPost)
-    })
-    .catch(error => {
-        console.log(error)
-        res.sendStatus(400)
-    })
-})
-
-router.put("/:id/like", async (req, res, next) => {
-
-    var postId = req.params.id
-    var userId = req.session.user._id
-
-    // Checking if they have a likes array already.
-    var isLiked = req.session.user.likes && req.session.user.likes.includes(postId)
-
-    var option = isLiked ? "$pull" : "$addToSet"
-
-    // Insert user like
-    req.session.user = await User.findByIdAndUpdate(userId, { [option]: {likes: postId} }, {new: true})
-    .catch(error => {
-        console.log(error)
-        res.sendStatus(400)
-    })
-
-    // Insert post like
-    var post = await Post.findByIdAndUpdate(postId, { [option]: {likes: postId} }, {new: true})
-    .catch(error => {
-        console.log(error)
-        res.sendStatus(400)
-    })
-
-    res.status(200).send(post)
-})
-
-router.post("/:id/retweet", async (req, res, next) => {
-    var postId = req.params.id;
-    var userId = req.session.user._id;
-
-    // Try and delete retweet
-    var deletedPost = await Post.findOneAndDelete({ postedBy: userId, retweetData: postId })
-    .catch(error => {
-        console.log(error);
-        res.sendStatus(400);
-    })
-
-    var option = deletedPost != null ? "$pull" : "$addToSet";
-
-    var repost = deletedPost;
-
-    if (repost == null) {
-        repost = await Post.create({ postedBy: userId, retweetData: postId })
-        .catch(error => {
-            console.log(error);
-            res.sendStatus(400);
-        })
-    }
-
-    // This will either add the repost itself to the users list of retweet or remove it depending on 
-    // what is in the option variable, which is decided above.
-    req.session.user = await User.findByIdAndUpdate(userId, { [option]: { retweets: repost._id } }, { new: true })
-    .catch(error => {
-        console.log(error);
-        res.sendStatus(400);
-    })
-
-    // Insert post like
-    var post = await Post.findByIdAndUpdate(postId, { [option]: { retweetUsers: userId } }, { new: true })
-    .catch(error => {
-        console.log(error);
-        res.sendStatus(400);
-    })
+// THERE IS NO VIEW 
+// BECAUSE THIS ROUTER / SERVER DOES NOT SERVE HTML PAGE
 
 
-    res.status(200).send(post)
-})
+router.get("/", (request, response,next) => {
+    /*
+        This API, fetches all the tweets that are gonna be shown 
+        to the user
+        All the logic, followers, not-followers etc. will
+        be implemented here.
+    */
+   /*
+        All the tweet-fetching idea will be here!
+   */
 
-async function getPosts(filter) {
-    var results = await Post.find(filter)
+    Post.find()
     .populate("postedBy")
-    .populate("retweetData")
-    .populate("replyTo")
-    .sort({"createdAt": -1})
-    .catch(error => console.log(error))
+    .sort({"createdAt": -1}) // sort in descending manner, newest first
+    .then((tweets) => {
 
-    results = await User.populate(results, {path: "replyTo.postedBy"})
-    return await User.populate(results, {path: "retweetData.postedBy"})
-}
+        return response.status(200).send(tweets);
 
-// Export it so we can use this file in other places.
-module.exports = router
+    })
+    .catch((error) => {
+        console.error(error);
+        console.error("an error occurred while fetching tweets");
+        return response.status(400);
+    })
+});
+
+router.post("/", (request, response, next) => {
+
+    // Send BAD REQUEST if the data is invalid
+    if(!request.body.content){
+        // Tweet is missing somehow
+        console.error("content parameter not sent with request");
+        return response.sendStatus(400);
+    }
+
+    // i.e. data post
+    let tweet = {
+        content: request.body.content,
+        postedBy: request.session.user,
+        pinned: false
+    };
+
+    // Create new tweet
+    Post.create(tweet)
+    .then(async (newTweet) => {
+        // Forward this new post (tweet) to the client
+        // why?
+        // it will render it 
+        
+        // We would like to add information about the user
+        // in response, so get the info from User collection
+        newTweet = await User.populate(newTweet, { path: "postedBy"});
+
+        newTweet.postedBy.password = ""; // forget the password
+        
+        response.status(201).send(newTweet);
+        // 201 : CREATED
+    })
+    .catch( (error) => {
+        console.error("error");
+        console.error("tweet not added to the db");
+        return response.sendStatus(400); // BAD REQUEST
+    })
+
+    
+});
+
+
+router.put("/:id/like", async (request, response, next) => {
+    /*
+        This API will handle PUT Requests to the Posts API
+        It will specifically handle LIKES IN POSTS
+    */
+
+    // GET POST ID
+    // Which tweet is this one?
+    let tweetID = request.params.id;
+
+    // GET USER ID
+    // Who wants to like this tweet?
+    let userID = request.session.user._id;
+    
+    // Figure Out: Whether this user has already liked this tweet or not
+    let isLiked = request.session.user.likes && request.session.user.likes.includes(tweetID);
+    /*
+        checking whether the user HAS EVER LIKED ANY POST
+        If the user has not liked any post, this tweet could not be liked
+        Why check this? 
+        To avoid reading null
+        And we could have check tweet.likes but user.likes is easier.
+    */
+    /*
+        based on isLiked situation, the API must decide whether
+        to ADD_TO_SET or PULL_FROM_THE_SET
+        i.e. add this like or remove this like
+    */
+
+    let option = isLiked ? "$pull" : "$addToSet";
+    // if it is liked by this user, remove the like
+    // if not liked by this user, add the like
+
+    // USER SIDE - Insert the like
+    request.session.user = 
+        await User.findByIdAndUpdate(userID, {[option]: { likes: tweetID}}, {new: true})
+        .catch( (error) => {
+            console.log("an error occured while inserting like to the db");
+            console.log(error);
+            response.sendStatus(400);
+        });
+    /*
+        SUPER IMPORTANT
+        Session has OLD INFORMATION about user's likes. 
+        It will not reflect liking operation recently.
+        That is why we want new information from MongoDB about user
+        and then UPDATE SESSION
+    */
+    
+    // TWEET SIDE - Insert the like
+    let tweet = await Post.findByIdAndUpdate(tweetID, {[option]: {likes: userID}} , {new: true})
+    .catch((error) => {
+        console.log("an error occured while inserting the like to the db");
+        response.status(400);
+    });
+
+    
+    /* RETURN THIS POST NOW */
+    // but new version
+    response.status(200).send(tweet);
+    // front-end will deal with this 
+
+    // Why 200? Why not 201?
+    // because we are not adding new resource
+    // just updating
+})
+
+
+// Export this router object
+module.exports = router;

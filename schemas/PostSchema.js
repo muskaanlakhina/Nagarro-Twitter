@@ -1,18 +1,21 @@
-const mongoose = require("mongoose")
+/*
+    This code will define how NOSQL database should be arranged
+    i.e. COLUMNS
+*/
 
-const Schema = mongoose.Schema
+const mongoose = require("mongoose");
 
+const Schema = mongoose.Schema;
+
+// We are defining posts table (collection)
+// we are explaining THE COLUMNS (fields)
 const PostSchema = new Schema({
-    // Not adding required: true in case client wants to retweet a post. 
-    textContent: { type: String, trim: true },
-    postedBy: { type: Schema.Types.ObjectId, ref: "User" },
-    likes: [{ type: Schema.Types.ObjectId, ref: "User" }],
-    retweetUsers: [{ type: Schema.Types.ObjectId, ref: "User" }],
-    retweetData: { type: Schema.Types.ObjectId, ref: "Post" },
-    replyTo: { type: Schema.Types.ObjectId, ref: "Post" }
-}, { timestamps: true })
-// This will give a timestamp on every document inserted in this collection.
+    content: {type : String, trim: true},
+    postedBy: {type: Schema.Types.ObjectId, ref: "User"},
+    pinned: Boolean,
+    likes:[{type:Schema.Types.ObjectId, ref: "User"}]
+}, { timestamps: true});
 
+let Post = mongoose.model("Post", PostSchema);
 
-const Post = mongoose.model("Post", PostSchema)
-module.exports = Post
+module.exports = Post;

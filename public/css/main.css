@@ -1,153 +1,155 @@
-:root {
-    --blue: #00ACEE;
-    --blueLight: #6acdf5;
-    --blueBackground: #00abee36;
-    --borderColor: rgb(209, 209, 209);
-    --spacing: 20px;
-    --UserPost: rgb(167, 167, 167);
+:root{
+    --twitterBlue: #1FA2F1;
+    --buttonHoverBackground: #D4EDFF;
+    --logoutReddishColor: #d84d4d;
+    --lightGray: rgb(230, 236, 240);
+    --lightGrayBorder: 2px solid var(--lightGray);
+    --spacing: 15px;
+    --postFormBoder : 7px solid var(--lightGray);
+    --buttonDisabledColor: #9BD1F9;
+    --grayText: rgb(92 102 111);
+    --grayButton: rgba(0,0,0,0.38);
+    --likeRed: rgb(226,34,94);
 }
 
 * {
     outline: none !important;
 }
 
-button {
-    background-color: transparent;
-    border: none;
+a{
+    color:inherit;
 }
 
-button i, 
-button span {
-    pointer-events: none;
+a:hover{
+    color: var(--twitterBlue);
+    text-decoration:none;
 }
 
-/* Skapar en variabel som går att kalla på via var(--blue) istället för att behöva byta färg överallt */
-
-a {
-    color: rgb(31, 31, 31);
+nav {
+    margin-top: 7%;
+    display:flex;
+    flex-direction:column;
+    align-items:flex-end;
+    height: 90%;
 }
 
-h1 {
-    font-size: 20px;
+
+nav a{
+    color: #7c848c;
+    padding:10px;
+    font-size:32px;
+    width:55px;
+    height:55px;
+    display:flex;
+    align-items:center;
+    justify-content: center;
+}
+
+nav a.twitterBird{
+    color: var(--twitterBlue)
+}
+
+nav a.logout{
+    color:#d84d4d;
+}
+
+nav a.logout:hover{
+    color: #d84d4d;
+    background-color: #f5e0e0;
+}
+
+nav a:hover{
+    background-color: var(--buttonHoverBackground);
+    color: var(--twitterBlue);
+    border-radius: 50%;
+}
+
+.mainSectionContainer {
+    background-color: white;
+    padding: 0;
+    border-left: var(--lightGrayBorder);
+    border-right: var(--lightGrayBorder);
+    display: flex;
+    flex-direction: column;
+
+}
+
+.titleContainer{
+    height: 53px;
+    padding: 0 var(--spacing);
+    display: flex;
+    align-items: center;
+    border-bottom: var(--lightGrayBorder);
+    flex-shrink: 0;
+
+}
+
+.titleContainer h1{
+    flex: 1;
+}
+
+h1{
+    font-size: 19px;
     font-weight: 800;
     margin: 0;
 }
 
-nav {
+.postFormContainer{
     display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    height: 100%;
-}
-
-nav a {
-    padding: 10px;
-    font-size: 30px;
-    width: 55px;
-    height: 55px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    text-decoration: none;
-}
-
-nav a:hover {
-    background-color: rgb(236, 236, 236);
-    color: var(--blue);
-    border-radius: 50%;
-}
-
-nav a.blue {
-    color: var(--blue)
-}
-
-.mainSectionContainer {
-    padding: 0;
-    border-left: 1px solid var(--borderColor);
-    border-right: 1px solid var(--borderColor);
-    display: flex;
-    flex-direction: column;
-}
-
-.titleContainer {
-    height: 50px;
-    padding: 0 var(--spacing);
-    display: flex;
-    align-items: center;
-    border-bottom: 1px solid var(--borderColor);
+    padding: var(--spacing);
+    border-bottom: var(--postFormBoder);
     flex-shrink: 0;
 }
 
-.titleContainer h1 {
-    flex: 1;
-}
-
-.postFormContainer {
-    display: flex;
-    padding: var(--spacing);
-    border-bottom: 10px solid var(--borderColor);
-}
-
-.modal .postFormContainer {
-    border: none;
-    padding: 0;
-    padding-top: var(--spacing);
-}
-
-.modal .post {
-    padding: 0;
-    padding-bottom: var(--spacing);
-}
-
 .userImageContainer {
-    width: 50px;
-    height: 50px;
+    width: 56px;
+    height: 56px;
 }
 
-.userImageContainer img{
+.userImageContainer img {
     width: 100%;
-    height: 100%;
     border-radius: 50%;
-    /* In case user insert a png picture without a background */
-    background-color: white;
+    background-color: 
 }
 
-.textareaContainer {
+.textareaContainer{
     flex: 1;
-    padding-left: var(--spacing)
+    padding: 0px var(--spacing);
 }
 
-.textareaContainer textarea {
+.textareaContainer textarea{
     width: 100%;
     border: none;
     resize: none;
     font-size: 20px;
+    font-family: "Helvetica";
 }
 
-#submitPostBtn {
-    background-color: var(--blue);
+#tweetButton{
+    background-color: var(--twitterBlue);
     color: white;
     border: none;
-    border-radius: 50px;
-    padding: 7px 15px
+    font-size: 18px;
+    border-radius: 40px;
+    padding: 7px 15px;
 }
 
-#submitPostBtn:disabled {
-    background-color: var(--blueLight);
+#tweetButton:disabled {
+    background-color: var(--buttonDisabledColor);
 }
 
 .post {
-    display: flex;
+    display:flex;
     flex-direction: column;
     padding: var(--spacing);
     cursor: pointer;
-    border-bottom: 1px solid var(--borderColor);
+    border-bottom: var(--lightGrayBorder);
     flex-shrink: 0;
 }
 
-.mainContainer {
+.mainContentContainer {
     flex: 1;
-    display: flex;
+    display:flex;
 }
 
 .postContentContainer {
@@ -157,228 +159,81 @@ nav a.blue {
     flex: 1;
 }
 
-.username
+.displayName{
+    font-weight: bold;
+}
+
+.username,
 .date {
-    color: var(--UserPost);
+    color: var(--grayText);
 }
 
-.postFooter {
-    display: flex;
-    justify-content: space-around;
+.verificationBadge{
+    margin-bottom:3px;
+    width:17px;
 }
 
-.postBtnContainer.red button.active {
-    color: rgb(204, 16, 41)
+.postBody{
+    margin-top: 3px;
+    font-size: 20px;
+    font-family: "Helvetica";
 }
 
-.postBtnContainer.red button:hover {
-    color: rgb(226, 55, 78);
-    background-color: rgba(216, 79, 79, 0.219);
-    border-radius: 50px;
+.postFooter{
+    flex:1;
+    display:flex;
+    width: 40%;
 }
 
-.postBtnContainer.green button:hover {
-    color: rgb(102, 196, 59);
-    background-color: rgba(83, 223, 83, 0.219);
-    border-radius: 50px;
+
+.postFooter .postButtonContainer{
+    flex: 1;
+    display:flex;
+
 }
 
-.postBtnContainer.red button:hover {
-    color: rgb(226, 55, 78);
-    background-color: rgba(255, 0, 0, 0.219);
-    border-radius: 50px;
+.postFooter .postButtonContainer button{
+    margin-top: 8px;
+    font-size: 18px;
 }
 
-.postBtnContainer button:hover {
+
+
+button{
+    background-color: white;
+    border:none;
+    color: var(--grayButton);
+    
+}
+
+button i,
+button span {
+    pointer-events: none;
+    /* click must happen at button, not at i tag */
+}
+
+
+.header a:hover{
+    text-decoration: underline;
+}
+
+.header a,
+.header span{
+    padding-right:0px;
+}
+
+.postFooter .postButtonContainer button{
+
+}
+
+.postButtonContainer button:hover{
     background-color: #d4edff;
-    color: var(--blue);
+    color: var(--twitterBlue);
+    border: 3px dashed #d4edff;
     border-radius: 50%;
-}
-
-.profileHeaderContainer .coverPhotoContainer{
-    height: 180px;
-    background-color: var(--blue);
-    position: relative;
-}
-
-.profileHeaderContainer .userImageContainer {
-    height: 132px;
-    width: 132px;
-    margin-left: var(--spacing);
     position: absolute;
-    bottom: -66px;
-
-    display: flex;
-    align-items: center;
-    justify-content: center;
 }
 
-.profileHeaderContainer .userImageContainer img{
-    border: 4px solid white
-}
-
-.profileHeaderContainer .profileButtonContainer{
-    text-align: right;
-    padding: var(--spacing);
-    min-height: 66px;
-}
-
-.profileButton, 
-.followButton {
-    border: 1px solid var(--blue);
-    color: var(--blue);
-    font-weight: bold;
-    padding: 5px 15px;
-    border-radius: 50px;
-    display: inline-block;
-    margin-left: var(--spacing);
-}
-
-.profileButton:hover,
-.followButton:hover {
-    background-color: var(--blueBackground);
-}
-
-.followButton.following {
-    background-color: var(--blue);
-    color: white;
-}
-
-.profileHeaderContainer .userDetailsContainer {
-    display: flex;
-    flex-direction: column;
-    padding: 0 var(--spacing);
-}
-
-.followersContainer .value{
-    font-weight: bold;
-    margin-right: 5px;
-}
-
-.followersContainer span:not(.value){
-    color: grey;
-}
-
-.followersContainer a{
-    margin-right: 15px;
-    text-decoration: none;
-}
-
-.followersContainer a:hover{
-    border-bottom: 1px solid black;
-}
-
-.tabsContainer {
-    display: flex;
-    border-bottom: 1px solid var(--borderColor);
-}
-
-.tab {
-    /* Splits the width equal between the two tabs  */
-    flex: 1;
-    height: 52px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    color: grey;
-    font-weight: bold;
-}
-
-.tab.active {
-    color: var(--blue);
-    border-bottom: 2px solid var(--blue);
-}
-
-.tab:hover {
-    color: var(--blue);
-    background-color: var(--blueBackground);
-}
-
-.postActionContainer {
-    padding-left: 35px;
-    font-size: 15px;
-    color: grey;
-    margin-bottom: 5px;
-}
-
-.replyFlag {
-    margin-bottom: 5px;
-    font-size: 15px;
-    color: grey;
-}
-
-.replyFlag a {
-    color: var(--blue);
-}
-
-.profilePictureButton {
-    position: absolute;
-    font-size: 50px;
-    color: rgba(0, 0, 0, 0.486);
-    display: none;
-}
-
-.userImageContainer:hover .profilePictureButton {
-    display: block;
-}
-
-#imagePreview {
-    width: 100%;
-    display: block;
-    max-width: 100%;
-}
-
-.userUpdateButton {
-    display: flex;
-}
-
-.userUpdateButton:hover {
-    color: var(--blue);
-}
-
-.modalBtn {
-    background-color: var(--blue);
-    border: none;
-}
-
-.modalBtn:hover {
-    background-color: #007bee;
-}
-
-.searchBarContainer {
-    position: relative;
-    color: grey;
-    padding: 10px var(--spacing);
-}
-
-.searchBarContainer i {
-    position: absolute;
-    top: 20px;
-    left: 30px
-}
-
-.searchBarContainer #searchBox {
-    height: 36px;
-    width: 100%;
-    padding: 5px 15px 5px 40px;
-    border: none;
-    border-radius: 50px;
-    background-color: lightgrey;
-    color: rgb(92, 92, 92);
-}
-
-.resultsContainer {
-    display: flex;
-    flex-direction: column;
-}
-
-.resultsContainer .user {
-    padding: var(--spacing);
-    display: flex;
-    border-bottom: 1px solid var(--borderColor);
-}
-
-.user .userDetailsContainer {
-    flex: 1;
-    padding: 0 var(--spacing);
+.postButtonContainer.red button.active{
+    color: var(--likeRed);
 }

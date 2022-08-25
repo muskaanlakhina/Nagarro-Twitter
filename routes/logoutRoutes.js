@@ -1,22 +1,30 @@
-// Declaring what dependency I want.
 const express = require("express");
-const app = express()
-const router = express.Router()
-const bodyParser = require("body-parser")
-const bcrypt = require("bcryptjs")
-const User = require("../schemas/UserSchema")
 
-app.use(bodyParser.urlencoded({ extended: false}))
+const app = express();
+// create an express instance
 
-// Handling the routes, not the server = app.
-router.get("/", (req, res, next) => {
+const bodyParser = require("body-parser");
 
-    if(req.session){
-        req.session.destroy(() => {
-            res.redirect("/login")
-        })
+app.use(bodyParser.urlencoded({extended: false}));
+// telling to use this body parser
+
+const router = express.Router();
+
+// There is going to be NO VIEWS, NO VIEW ENGINGE, NO HTML
+// NO CSS 
+
+router.get("/", (request, response, next) => {
+
+    // First check whether THERE IS A SESSION THAT IS SET
+    if(request.session){
+        // IF SESSION HAS BEEN SET
+        // destroy this session 
+        request.session.destroy( () => {
+            // after destroying
+            // redirect the user to login
+            response.redirect("/login");
+        });
     }
-})
+});
 
-// Export it so we can use this file in other places.
-module.exports = router
+module.exports = router;

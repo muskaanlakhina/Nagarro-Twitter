@@ -1,66 +1,137 @@
-// Declaring what dependency I want.
+
 const express = require("express");
-const app = express()
-const router = express.Router()
-const bodyParser = require("body-parser")
-const User = require("../schemas/UserSchema")
-const bcrypt = require("bcryptjs")
+
+const bcrypt = require("bcrypt"); // for hashing the password
+
+// make an instance of express
+const app = express();
+
+const User = require("../schemas/UserSchema");
+// access to the User collection (table)
+
+// Use Body Parser
+// to parse elements in Request Form
+const bodyParser = require("body-parser");
+// relate body parser with express server (router)
+app.use(bodyParser.urlencoded({extended: false}));
 
 
-app.set("view engine", "pug")
-// When you need views, go to folder namned views.
-app.set("views", "views")
+// No starting server here, because this is router not server
 
-// It will only contain key value pairs made up of strings or arrays.
-app.use(bodyParser.urlencoded({ extended: false}))
+// Create router object
+const router = express.Router();
 
-// Handling the routes, not the server = app.
-router.get("/", (req, res, next) => {
-    res.status(200).render("register")
-})
+// Use Pug
+app.set("view engine", "pug");
+app.set("views", "views"); // sources of pug files (views)
 
-router.post("/", async (req, res, next) => {
-    const username = req.body.username.trim()
-    const password = req.body.password
 
-    const payload = req.body
+// HTTP Requests to twitter.com/register 
+// redirected by server
+// Server -> Router
+router.get("/", (request, response, next) => {
+    const OKAY = 200;
+    response.status(OKAY).render("register"); // render register view
 
-    if(username && password){
-        // This will go into the database and check for user.
-        const user = await User.findOne({ username: username})
-        .catch((error) => {
-            console.log(error)
-            payload.errorMessage = "Something went wrong."
-            res.status(200).render("register", payload)
+} );
+
+router.post("/", async (request, response, next) => {
+    // This function will evaluate post requests to the server or router
+    const OKAY = 200;
+
+    let name = request.body.name.trim();
+    let username = request.body.username.trim();
+    let email = request.body.email.trim();
+    let password = request.body.password;
+
+    // Server-side validation
+    // Make sure that none of them is empty
+    // EMPTYNESS VALIDATION
+
+    if(name && username && email && password){
+        // there is no problem
+
+        var payload = request.body;
+
+        // Gotta CHECK WHETHER THIS USERNAME OR EMAIL ALREADY EXISTS
+        let user = await User.findOne({
+            $or: [
+                {username: username}, 
+                {email: email}
+        ]})
+        .catch( (error) => {
+            console.log(error); // First log the error
+            // Then inform the user that an error occurred
+            payload.errorMessage = "oops something went wrong";
+            response.status(OKAY).render("register", payload);
         })
- 
-        // No user found.
-        // If we didn't find a user, a new user will be created.
+
+        // Now control whether there is a user found or not
+
         if(user == null){
-            const data = req.body
-            // We salt the password 2 raised to 10 times.
-            data.password = await bcrypt.hash(password, 10)
+            // there is no user with this username and email
+            // INSERT THE USER TO THE DATABASE
 
-            User.create(data)
+            // User infomation is stored in REQUEST.BODY
+            let userData = request.body;
+
+            // Hash the password before sending to the database
+            // i.e. Encryption
+
+            const saltRounds = 11; // how many times hashing will occur 2^11
+            userData.password = await bcrypt.hash(password, saltRounds);
+
+            User.create(userData)
             .then((user) => {
-                // We store newly created user in the session of the user property.
-                req.session.user = user
-                return res.redirect("/")
+                // after adding new user
+                console.log("!! -- NEW USER REGISTERATED--");
+                console.log(user);
+
+                // ADD THIS USER TO SESSION
+                request.session.user = user; // REMEMBER HE/SHE HAS LOGGED IN
+
+                // NOW, since the user is registered/ logged in
+                // REDIRECT TO HOME PAGE
+                return response.redirect("/"); 
             })
-
-        // User found.
-        // If we did find a user, we output error message.
-        } else {
-            payload.errorMessage = "Username already exists."
-            res.status(200).render("register", payload)
+            .catch((error) => {
+                console.log(" !! ERROR WHILE INSERTING NEW USER");
+                console.log(error);
+            });
         }
-    } else {
-        payload.errorMessage = "Make sure each field is filled in."
-        res.status(200).render("register", payload)
+        else{
+            // there is a user that  has this username or this email
+            // check which one is it
+            if( email == user.email){
+                // emails match
+                payload.errorMessage = "Email already in use!";
+            }
+            else if ( username == user.username){
+                // usernames match
+                payload.errorMessage = "Username already in use!";
+            }
+
+            response.status(200).render("register", payload);
+        }
+        
+      
+
+        //response.send("everything is cool for now");
     }
+    else{
+        // We do not want the user to lose information 
+        // in register form
+        // because we will ask the user to fill again
+        // Keep all the values in the form 
+        // i.e. SEND ALL DATA BACK TO FRONT-END
+        let payload = request.body;
+        payload.errorMessage = "Make sure each field has a valid value!"; 
+        // render an error message
+        response.status(OKAY).render("register", payload);
+    }
+
+
     
-})
+});
 
-
-// Export it so we can use this file in other places.
-module.exports = router
+module.exports = router; // export this router object

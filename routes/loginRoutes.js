@@ -1,52 +1,115 @@
-// Declaring what dependency I want.
 const express = require("express");
-const app = express()
-const router = express.Router()
-const bodyParser = require("body-parser")
-const bcrypt = require("bcryptjs")
-const User = require("../schemas/UserSchema")
 
+const bcrypt = require("bcrypt");
+// we'll use for password checking
 
-app.set("view engine", "pug")
-// When you need views, go to folder namned views.
-app.set("views", "views")
+const app = express();
+// create express instance
 
-app.use(bodyParser.urlencoded({ extended: false}))
+// There is NO PORT HERE, because we are not going to create server
+// There is NO MIDDLEWARE, because middleware redirects us here
 
+// User Body Parser
+// to parse elements in Login Form
+const bodyParser = require("body-parser");
+// relate the body parser with the express server
+app.use(bodyParser.urlencoded({extended: false}));
 
-// Handling the routes, not the server = app.
-router.get("/", (req, res, next) => {
-    res.status(200).render("login")
-})
+const User = require("../schemas/UserSchema");
+// in order to access User collection (table)
 
-router.post("/", async (req, res, next) => {
+const router = express.Router();
 
-    const payload = req.body
+const OKAY = 200;
 
-    if(req.body.logUsername && req.body.logPassword){
-        const user = await User.findOne({ username: req.body.logUsername})
-        .catch((error) => {
-            console.log(error)
-            payload.errorMessage = "Something went wrong."
-            res.status(200).render("login", payload)
+// Keep these because we will use pug
+app.set("view engine", "pug");
+// say that we want to use pug template engine
+app.set("views", "views");
+// means that our pug views is located in views folder
+
+// We call this router because it handles only this route
+router.get("/", (request, response, next) => {
+
+    var payload = {
+        pageTitle : "Login"
+    };
+    
+    
+    response.status(OKAY).render("login", payload);
+});
+
+// Need to handle post request for login
+router.post("/", async (request, response, next) => {
+
+    var payload = request.body;
+    // in order to send back to the client, 
+    // to make the username entered if something wrong happens
+
+    // Possiblity 1: GIVEN VALUES ARE VALID, PROPER
+    if(request.body.logUsername && request.body.logPassword){
+        // Check whether THIS USER EXISTS OR NOT
+        var user = await User.findOne({
+            $or:[
+                {username: request.body.logUsername},
+                {email: request.body.logUsername}]
         })
+        .catch((error) => {
+            // Something has gone wrong
+            // This error is about SERVER, not user find or not
+            console.log(error);
+            payload.errorMessage = "Something went wrong.";
 
+            // render login page again with username entered *
+            response.status(OKAY).render("login", payload);
+
+        });
+
+        // Possibility 3: USER FOUND
         if(user != null){
-            // We compare the crypted password with the one the user passed in.
-            const result = await bcrypt.compare(req.body.logPassword, user.password)
+            // PASSWORD CHECK
+            // **EXTREMELY IMPORANT **
+            // request.body.password IS NOT ENCRYPTED
+            // but user.password IS ENCRYPTED 
+            // so use library for this
+            // COMPARISON: ENCRYPTED and NOT-ENCRYPTED
+            var result = await bcrypt.compare(request.body.logPassword, user.password);
+            // result is TRUE or FALSE
 
+            // Possiblity 5: Username and Password ARE CORRECT
             if(result === true){
-                req.session.user = user
-                return res.redirect("/")
-            } 
+                // PASSWORD IS CORRECT
+                // ** REMEMBER ** this user with sessions
+                request.session.user = user;
+                return response.redirect("/"); // show home page
+
+            }
+            else{
+                // Possiblity 6: Username IS CORRECT, PASSWORD IS WRONG
+                payload.errorMessage = "Password is incorrect.";
+                // render login page with username entered with error message
+                return response.status(OKAY).render("login", payload);
+
+            }
+
         }
-        payload.errorMessage = "Wrong login credentials."
-        return res.status(200).render("login", payload)
+        // Possiblity 4: USER DOES NOT EXIST
+        else{
+            payload.errorMessage = "User does not exist.";
+            // render login page with username entered with error message
+            return response.status(OKAY).render("login", payload);
+        }
+    }
+    // Possibility 2: GIVEN VALUES ARE NOT VALID, I.E. EMPTY
+    else{
+
+        payload.errorMessage = "Make sure each field has a valid value.";
+        // render error message to page
+        return response.status(OKAY).render("login", payload);
     }
 
-    payload.errorMessage = "Make sure each field has a valid value."
-    res.status(200).render("login")
-})
+});
 
-// Export it so we can use this file in other places.
-module.exports = router
+
+// Export this router object
+module.exports = router;

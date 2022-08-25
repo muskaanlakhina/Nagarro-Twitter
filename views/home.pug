@@ -1,11 +1,10 @@
 extends layouts/main-layout.pug
 
-block content
-    //- Adds all the content inside this mixin
+block content 
     +createPostForm(userLoggedIn)
-    .postContainer
+    .postsContainer 
 
-    +createReplyModal(userLoggedIn)
-
-block scripts
-    script(src="/js/home.js")
+block scripts 
+    //- Scripts that are attached with home.html
+    script(src = "/js/home.js")
+    script(src = "/js/time_difference.js")

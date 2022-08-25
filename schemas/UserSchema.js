@@ -1,21 +1,25 @@
-const mongoose = require("mongoose")
+/*
+    This code will define how NOSQL database should be arranged
+    i.e. COLUMNS
+*/
 
-const Schema = mongoose.Schema
+const mongoose = require("mongoose"); // singleton
 
+const Schema = mongoose.Schema;
+
+// we are defining user table (collection)
+// we are explaining THE COLUMNS (fields)
 const UserSchema = new Schema({
-    username: {type: String, require: true, trim: true, unique: true},
-    firstname: {type: String},
-    lastname: {type: String},
-    email: {type: String, unique: true},
-    password: {type: String, require: true},
-    profilePic: {type: String, default: "/images/profilePic.jpg"},
-    likes: [{ type: Schema.Types.ObjectId, ref: "Post" }],
-    retweets: [{ type: Schema.Types.ObjectId, ref: "Post" }],
-    following: [{ type: Schema.Types.ObjectId, ref: "User" }],
-    followers: [{ type: Schema.Types.ObjectId, ref: "User" }]
-}, { timestamps: true })
-// This will give a timestamp on every document inserted in this collection.
+    name:{ type:String, default: "Nameless Guy", trim: true },
+    username:{ type:String, required: true, trim:true, unique: true},
+    email: {type: String, required: true, trim:true, unique: true},
+    password:{type:String, required: true},
+    profilePicture:{type:String, default: "/images/defaultProfilePicture.png"},
+    verifiedAccount: {type:Boolean, default: false},
+    likes:[{type:Schema.Types.ObjectId, ref: "Post"}]
+}, { timestamps: true }); 
 
+var User = mongoose.model("User", UserSchema);
+// Match the User Schema with database
 
-const User = mongoose.model("User", UserSchema)
-module.exports = User
+module.exports = User;
